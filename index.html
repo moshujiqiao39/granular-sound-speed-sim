@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>颗粒物质声速虚拟仿真实验</title>
+  <meta name="description" content="基于时差法与压力传感器，水平加载测量玻璃珠和钢珠中声速的虚拟仿真实验。">
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="css/lab.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>颗粒物质声速实验</h1>
+        <p>时差法 · 压力传感器 · 水平加载</p>
+      </div>
+    </div>
+    <nav id="nav">
+      <button type="button" data-view="guide">导览</button>
+      <button type="button" data-view="theory">原理</button>
+      <button type="button" data-view="bench">虚拟实验台</button>
+      <button type="button" data-view="data">数据处理</button>
+      <button type="button" data-view="hertz">高压仿真</button>
+      <button type="button" data-view="discuss">讨论</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-guide" class="view">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="kicker">2026 上海市大学生物理实验竞赛（创新） · 速强团队</p>
+          <h2>基于时差法与压力传感器测量颗粒物质中的声速</h2>
+          <p class="lead">传统装置把颗粒竖直堆放，自重会在弱压强下造成额外应力。本实验把样品管水平放置、水平加载，在约 0–20 kPa 内测量玻璃珠和钢珠的纵波声速，并用赫兹接触理论把压力范围延伸到兆帕量级。</p>
+          <div class="stats">
+            <div class="stat"><b>6 种样品</b><span>1 / 2 / 3 mm 玻璃珠与钢珠</span></div>
+            <div class="stat"><b>0–20 kPa</b><span>传感器质量换算名义压强</span></div>
+            <div class="stat"><b>36 kHz</b><span>6 个方波脉冲，20 Vpp</span></div>
+            <div class="stat"><b>v ∝ P<sup>1/6</sup></b><span>高压区赫兹标度，可现场改参数</span></div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" type="button" data-view="bench">进入虚拟实验台</button>
+            <button class="btn" type="button" data-view="data">直接处理原始数据</button>
+            <button class="btn" type="button" data-view="hertz">高压区理论曲线</button>
+          </div>
+        </div>
+        <div class="formula-card">
+          <div>
+            <p class="kicker">测量关系</p>
+            <div class="eq">L = v t + b</div>
+            <p class="small muted">多组间距 L 与传播时间 t 作直线拟合，斜率才是声速。截距 b 吸收探头延迟和光标所对的周期差，所以单点 L/t 并不是本实验的声速。</p>
+            <div class="eq">P = 4 M g / (π D²)</div>
+            <p class="small muted">传感器读的是加载端等效质量 M。默认 g = 9.80 m/s²，玻璃管内径 D = 80 mm。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <article class="card">
+          <h3>实验目的</h3>
+          <ol>
+            <li>实现颗粒水平放置、水平加载，减弱自重对微小压强的影响。</li>
+            <li>用压力传感器读取载荷，研究 20 kPa 以下声速与名义压强的关系。</li>
+            <li>用赫兹接触理论计算并交互演示高压区的 1/6 标度。</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h3>你在这个网站里可以改什么</h3>
+          <ul>
+            <li>样品、粒径、载荷、探头间距、室温、管内径和重力加速度。</li>
+            <li>信号频率、幅度、脉冲个数、耦合剂、回程差和读数噪声。</li>
+            <li>配位数 Z、体积分数 φ、管壁传力效率。</li>
+            <li>示波器光标位置，或直接改数据表里的每一个 t 和 L。</li>
+            <li>高压仿真中的半径、模量、泊松比、密度和压强。</li>
+          </ul>
+        </article>
+      </div>
+
+      <article class="card">
+        <h3>实验步骤</h3>
+        <ol class="steps">
+          <li>连接信号发生器、发射探头 S1、接收探头 S2、放大器和示波器，设定脉冲串。</li>
+          <li>空管测量空气声速，用来检查装置。本实验空气拟合结果为 350.3 m/s。</li>
+          <li>装入一种颗粒，不加外载荷，移动 S2，读取至少 6 组 (L, t)，拟合声速。</li>
+          <li>转动测距螺杆逐级加载。传感器稳定后，在每个载荷下重新做时差法。</li>
+          <li>把质量换算成名义压强，对 ln v 与 ln P 拟合，得到该样品的幂指数。</li>
+          <li>更换材质或粒径。外加载荷系列覆盖四种样品；零载荷覆盖全部六种，外加空气对照。</li>
+          <li>真实装置到不了 0.4 MPa 以上。高压部分改用赫兹公式计算，并和低压实测对比。</li>
+        </ol>
+        <p class="small muted">操作时沿同一方向转动螺杆，加完载荷等波形稳定再读数，避免回程差和颗粒重排。</p>
+      </article>
+
+      <article class="card">
+        <h3>装置与器材</h3>
+        <p>优化后的仪器把水平玻璃管、S1/S2 及保护套、测距加载螺杆、压力传感器和显示模块固定在同一框架上。样品管上方留填料口。探头与保护套之间使用超声耦合剂。重力方向与传播、加载方向垂直。</p>
+        <table>
+          <thead><tr><th>器材</th><th>型号或规格</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>函数信号发生器</td><td>AFG-2225</td><td>输出方波脉冲串</td></tr>
+            <tr><td>数字示波器</td><td>SDS 1202X</td><td>观察发射波与接收波，光标读时间差</td></tr>
+            <tr><td>压电陶瓷换能器</td><td>36 kHz，纵向</td><td>发射和接收纵波超声</td></tr>
+            <tr><td>压力传感器</td><td>GALOCE GML670</td><td>读取加载端等效载荷</td></tr>
+            <tr><td>玻璃样品管</td><td>内径 80 mm</td><td>水平盛装颗粒</td></tr>
+            <tr><td>颗粒样品</td><td>玻璃珠、钢珠，直径 1 / 2 / 3 mm</td><td>待测介质</td></tr>
+            <tr><td>信号放大器</td><td>—</td><td>改善接收信号</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <div class="grid-3">
+        <article class="card"><h3>预实验</h3><p>先测空气，再测零载荷颗粒。空气声速接近温度公式的预期，颗粒声速低于空气，钢珠快于同粒径玻璃珠，装置才进入正式加压测量。</p></article>
+        <article class="card"><h3>正式测量</h3><p>每个载荷记录多组距离和时间。声速取 L–t 直线斜率，并给出相关系数 r 和斜率标准差 s<sub>m</sub>。</p></article>
+        <article class="card"><h3>高压拓展</h3><p>附录程序按 P → F → δ → k<sub>n</sub> → E<sub>eff</sub> → v 计算。在理想条件下 ln v–ln P 的斜率精确等于 1/6。</p></article>
+      </div>
+    </section>
+
+    <section id="view-theory" class="view" hidden>
+      <article class="card">
+        <h2>实验原理</h2>
+        <p>颗粒物质是大量粒径在 1 μm 以上的离散固体颗粒。这个尺度上，热涨落不再主导，宏观行为由接触力、摩擦和重力决定。声速反映的是力链网络的刚度和连通程度，声波优先走更硬、更直的强力链。</p>
+      </article>
+      <div class="grid-2">
+        <article class="card">
+          <h3>超声与换能器</h3>
+          <p>实验使用 20–60 kHz 的纵波。信号源以 burst 方式输出方波脉冲串：每串 6 个脉冲，频率 36 kHz，幅度 20 Vpp，重复周期 60 ms。压电片沿厚度振动，S1 发射，S2 接收。颗粒里衰减很快，示波器上要认准移动时不消失的那个接收波峰。</p>
+        </article>
+        <article class="card">
+          <h3>时差法</h3>
+          <div class="eq">v = ΔL / Δt</div>
+          <p>固定 S1，移动 S2。若存在固定的电路延迟和光标周期差，单次测量会偏。对多组数据做</p>
+          <div class="eq">L = v t + b</div>
+          <p>斜率 v 才是介质声速，截距 b 对应等效延迟 t<sub>0</sub> = −b / v。</p>
+        </article>
+      </div>
+      <article class="card">
+        <h3>直线拟合与斜率标准差</h3>
+        <p>设 x 为时间、y 为距离，x̄、ȳ 为平均值。</p>
+        <div class="eq">r = Σ(x−x̄)(y−ȳ) / √[ Σ(x−x̄)² · Σ(y−ȳ)² ]</div>
+        <div class="eq">s<sub>m</sub> = |m| · √[ (1/r² − 1) / (n − 2) ]</div>
+        <p class="small muted">r 要保留足够位数再代入 s<sub>m</sub>，中间步骤过早舍入会把标准差算坏。本站用原始数据直接计算。时间用 ms、距离用 mm 时，斜率的数值就是 m/s。</p>
+      </article>
+      <article class="card">
+        <h3>名义压强</h3>
+        <div class="eq">P = M g / A ， A = π D² / 4</div>
+        <p>这是加载端的名义压强，不是颗粒内部的真实平均应力。管壁摩擦（仓壁效应）会吃掉一部分推力。默认 4 kg 对应 7798.6 Pa。你可以改 M、g 和 D，压强和后面的幂指数会跟着变，而 L–t 斜率本身不变。</p>
+      </article>
+      <article class="card">
+        <h3>赫兹接触与 1/6 标度</h3>
+        <p>把堆积体看成等效连续介质时，纵波声速为</p>
+        <div class="eq">v = √(E<sub>eff</sub> / ρ<sub>eff</sub>) ， ρ<sub>eff</sub> = ρ<sub>s</sub> φ</div>
+        <p>两个相同弹性球的等效模量、接触力、重叠量、接触刚度和有效模量依次是</p>
+        <div class="eq">E* = E / [2(1−ν²)]</div>
+        <div class="eq">F = 4πR² P / (Z φ)</div>
+        <div class="eq">δ = [ 3F / (4 E* √R) ]<sup>2/3</sup></div>
+        <div class="eq">k<sub>n</sub> = 2 E* √(R δ)</div>
+        <div class="eq">E<sub>eff</sub> = Z φ k<sub>n</sub> / (4π R)</div>
+        <p>联立后 E<sub>eff</sub> ∝ P<sup>1/3</sup>，因此</p>
+        <div class="eq">v ∝ P<sup>1/6</sup></div>
+        <p>半径 R 在接触刚度与升尺度中相消，理想赫兹声速不随粒径改变。本实验在低压下看到的“粒径越大、声速越高”，来自接触点数量和散射路径，不在这条理想标度里。</p>
+        <p>适用条件：弹性小变形，Z 和 φ 稳定，力链连续，波长远大于粒径。经验上大约 P ≳ 0.4 MPa 才比较接近。更低的压力下，文献里的指数常常靠近 1/4，原因包括表面粗糙、软壳层，以及配位数随加载变化。</p>
+        <label class="field">相对压强 P / P<sub>0</sub>
+          <input id="theory-ratio" type="range" min="0.05" max="25" step="0.05" value="1">
+        </label>
+        <p>若高压区满足 1/6 标度，则 v / v<sub>0</sub> = <strong id="theory-scale">1.000</strong>。当前倍数 <span id="theory-mult">1.00</span>。</p>
+      </article>
+      <article class="card">
+        <h3>力链的三个阶段</h3>
+        <div class="grid-3">
+          <div><h4>稀疏</h4><p class="small">加载初期只有少数颗粒接触，声波路径断续，声速偏低。</p></div>
+          <div><h4>分叉</h4><p class="small">压力升高后接触变多，出现更多平行通道，声速上升较快。</p></div>
+          <div><h4>成网</h4><p class="small">力链交叉成网之后，再加压主要是让已有接触变硬，声速增幅变缓。</p></div>
+        </div>
+        <p class="small muted">即便本实验的最高载荷，相对 0.4 MPa 仍然是弱压强。这里的“成网”描述的是弱压强内部的拓扑变化，不是等效介质理论已经严格成立。</p>
+      </article>
+    </section>
+
+    <section id="view-bench" class="view" hidden>
+      <div class="bench-grid">
+        <aside class="panel scroll-panel">
+          <h3>实验条件</h3>
+          <label class="field">样品
+            <select id="sample"></select>
+          </label>
+          <div id="custom-box" hidden>
+            <label class="field">粒径 / mm<input id="custom-d" class="num" type="number" min="1" max="3" step="0.1" value="2"></label>
+            <label class="field">杨氏模量 / GPa<input id="custom-E" class="num" type="number" min="1" max="400" step="1" value="65"></label>
+            <label class="field">泊松比<input id="custom-nu" class="num" type="number" min="0" max="0.45" step="0.01" value="0.22"></label>
+            <label class="field">密度 / kg·m⁻³<input id="custom-rho" class="num" type="number" min="200" max="20000" step="10" value="2230"></label>
+            <p class="small muted">自定义样品以玻璃珠的低压经验曲线为基准，再按赫兹材料标度作部分修正（指数 0.4）。要复现钢珠实测，请直接选钢珠。</p>
+          </div>
+          <label class="field"><span>实验室温度 <b id="temp-val">31.4 °C</b></span>
+            <input id="temp" type="range" min="0" max="45" step="0.1" value="31.4">
+          </label>
+          <p class="small muted" id="temp-note"></p>
+          <label class="field"><span>加载质量 <b id="mass-val">0.00 kg</b></span>
+            <div class="row-2">
+              <input id="mass" type="range" min="0" max="12" step="0.1" value="0">
+              <input id="mass-num" class="num" type="number" min="0" max="12" step="0.1" value="0">
+            </div>
+          </label>
+          <div class="row-2">
+            <label class="field">g / m·s⁻²<input id="bench-g" class="num" type="number" min="1" max="20" step="0.01" value="9.8"></label>
+            <label class="field">管内径 / mm<input id="bench-tube" class="num" type="number" min="20" max="200" step="0.1" value="80"></label>
+          </div>
+          <label class="field"><span>探头间距 L <b id="length-val">50.00 mm</b></span>
+            <div class="row-2">
+              <input id="length" type="range" min="30" max="120" step="0.1" value="50">
+              <input id="length-num" class="num" type="number" min="30" max="120" step="0.01" value="50">
+            </div>
+          </label>
+          <details>
+            <summary>介质与误差因素</summary>
+            <label class="field"><span>配位数 Z <b id="z-val">5.20</b></span>
+              <input id="Z" type="range" min="4" max="8" step="0.1" value="5.2">
+            </label>
+            <label class="field"><span>体积分数 φ <b id="phi-val">0.610</b></span>
+              <input id="phi" type="range" min="0.45" max="0.74" step="0.01" value="0.61">
+            </label>
+            <label class="field"><span>传力效率 η <b id="eta-val">1.00</b></span>
+              <input id="eta" type="range" min="0.5" max="1" step="0.01" value="1">
+            </label>
+            <p class="small muted">η &lt; 1 表示管壁摩擦使内部压力低于名义压强。声速按内部压力计算，你记录的仍是传感器名义压强。</p>
+            <label class="check"><input id="coupling" type="checkbox" checked> 已涂超声耦合剂</label>
+            <label class="check"><input id="backlash" type="checkbox"> 模拟螺杆回程差 0.40 mm</label>
+            <label class="field"><span>读数噪声倍率 <b id="noise-val">1.0</b></span>
+              <input id="noise" type="range" min="0" max="3" step="0.1" value="1">
+            </label>
+          </details>
+          <details open>
+            <summary>信号发生器 AFG-2225</summary>
+            <label class="field">频率 / kHz<input id="freq" class="num" type="number" min="20" max="60" step="0.1" value="36"></label>
+            <label class="field">幅度 / Vpp<input id="vpp" class="num" type="number" min="1" max="20" step="0.5" value="20"></label>
+            <label class="field">每串脉冲数<input id="pulses" class="num" type="number" min="1" max="12" step="1" value="6"></label>
+            <label class="field">重复周期 / ms<input id="period" class="num" type="number" min="1" max="200" step="1" value="60"></label>
+          </details>
+          <div id="checklist"></div>
+        </aside>
+
+        <div class="stage">
+          <div class="bezel">
+            <div class="bar"><span>水平声速测量仪</span><span id="particle-count">空管</span></div>
+            <canvas id="apparatus"></canvas>
+          </div>
+          <div class="bezel">
+            <div class="bar">
+              <span>SDS 1202X · CH1 发射 · CH2 接收</span>
+              <span id="scope-meta"></span>
+            </div>
+            <canvas id="scope"></canvas>
+            <div class="row-2" style="margin-top:8px">
+              <label class="field">时基 μs/div
+                <select id="usdiv">
+                  <option value="20">20</option>
+                  <option value="50" selected>50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                </select>
+              </label>
+              <label class="check"><input id="show-ref" type="checkbox" checked> 显示首波参考线</label>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>力链示意</h3>
+            <canvas id="chains" style="height:168px"></canvas>
+            <p id="chain-caption" class="small chain-note"></p>
+          </div>
+        </div>
+
+        <aside class="panel scroll-panel">
+          <h3>读数与记录</h3>
+          <div class="lcd">传感器 <strong id="sensor-readout">0.00 kg</strong><div id="pressure-readout">名义压强 0 Pa</div></div>
+          <p>光标 Δt = <strong id="dt-readout">—</strong> ms</p>
+          <p class="small">单点估算 L/Δt = <strong id="single-v">—</strong> m/s。最终声速用下面的斜率。</p>
+          <div id="warn-backlash" class="warn" hidden>检测到反向调节，刻度比真实间距大约多 0.40 mm。请沿原前进方向多转一些以消隙。</div>
+          <div id="warn-snr" class="warn" hidden></div>
+          <div class="actions">
+            <button class="btn primary" id="btn-peak" type="button">寻峰并读数</button>
+            <button class="btn" id="btn-record" type="button">记入当前点</button>
+          </div>
+          <div class="actions">
+            <button class="btn" id="btn-auto" type="button">辅助采集 6 个间距</button>
+            <button class="btn ghost" id="btn-clear" type="button">清空本载荷</button>
+          </div>
+          <details>
+            <summary>对照仿真真值</summary>
+            <p class="small" id="truth-box"></p>
+          </details>
+          <div id="live-fit"></div>
+          <table>
+            <thead><tr><th>#</th><th>t / ms</th><th>L / mm</th><th></th></tr></thead>
+            <tbody id="point-body"></tbody>
+          </table>
+          <div class="actions">
+            <button class="btn primary" id="btn-save" type="button">完成本载荷，记入结果</button>
+          </div>
+          <p class="small muted">每个载荷建议 6 个间距。记入后改变质量或样品，再测下一组。全部结果在“数据处理”里汇总，并计算幂指数。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-data" class="view" hidden>
+      <article class="card">
+        <h2>数据处理</h2>
+        <p>左边用虚拟实验台测得的数据，右边是研究报告和答辩附件里的原始 (t, L)。两边都可以改数字：改时间或距离会重算声速、r 和 s<sub>m</sub>；改 g 或管内径会重算名义压强和 ln v–ln P 的幂指数，但不会改变已经测得的声速。</p>
+        <div class="pills">
+          <button type="button" id="tab-mine">本次虚拟测量</button>
+          <button type="button" id="tab-book" class="active">原实验数据</button>
+        </div>
+        <div class="grid-2" style="max-width:520px">
+          <label class="field">分析用 g / m·s⁻²<input id="data-g" class="num" type="number" min="1" max="20" step="0.01" value="9.8"></label>
+          <label class="field">分析用内径 / mm<input id="data-tube" class="num" type="number" min="20" max="200" step="0.1" value="80"></label>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btn-export" type="button">导出 CSV</button>
+          <button class="btn ghost" id="btn-reset-book" type="button">恢复原始数据</button>
+          <button class="btn danger" id="btn-clear-mine" type="button">清空本次测量</button>
+        </div>
+      </article>
+      <div id="sample-pills" class="pills"></div>
+      <div class="grid-2">
+        <article class="card">
+          <h3>各载荷拟合</h3>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr><th>载荷</th><th>P / Pa</th><th>v / m·s⁻¹</th><th>r</th><th>s<sub>m</sub></th><th>n</th></tr>
+              </thead>
+              <tbody id="summary-body"></tbody>
+            </table>
+          </div>
+          <div id="exponent-box"></div>
+        </article>
+        <article class="card">
+          <h3 id="editor-title">数据点</h3>
+          <table class="editor-table">
+            <thead><tr><th>t / ms</th><th>L / mm</th><th></th></tr></thead>
+            <tbody id="editor-body"></tbody>
+          </table>
+          <button class="btn" id="btn-add-point" type="button">增加一行</button>
+          <p class="small muted">报告正文里 1 mm 与 2 mm 玻璃珠的幂指数栏曾经对调；2 mm 钢珠零载荷的 r 也与附件不一致。本页一律按表中的 t、L 重算。</p>
+        </article>
+      </div>
+      <div class="split-charts">
+        <article class="card"><h3>当前载荷的 L–t</h3><canvas class="chart" id="chart-lt"></canvas></article>
+        <article class="card"><h3>声速–压强</h3><canvas class="chart" id="chart-vp"></canvas></article>
+      </div>
+      <article class="card">
+        <h3>双对数与全部样品</h3>
+        <div class="split-charts">
+          <canvas class="chart" id="chart-log"></canvas>
+          <canvas class="chart" id="chart-all"></canvas>
+        </div>
+        <div id="compare-box"></div>
+      </article>
+    </section>
+
+    <section id="view-hertz" class="view" hidden>
+      <article class="card">
+        <h2>高压区赫兹仿真</h2>
+        <p>真实螺杆和传感器到不了使等效介质理论严格成立的压力。这里按附录程序，从宏观压强一路算到纵波声速。理想曲线的双对数斜率就是 1/6。默认参数对应报告表中的玻璃珠：半径 0.36 mm，Z = 5.2，φ = 0.61，E = 65 GPa，ν = 0.22，ρ = 2230 kg/m³。0.4 MPa 处的声速由公式直接算出，不再另设锚点。</p>
+        <div id="h-warning" class="warn" hidden></div>
+      </article>
+      <div class="grid-2">
+        <article class="panel">
+          <label class="field"><span>压强 <b id="h-pval">0.400 MPa</b></span>
+            <input id="h-P" type="range" min="-2" max="1" step="0.01" value="-0.39794">
+          </label>
+          <label class="field">压强 / MPa<input id="h-Pnum" class="num" type="number" min="0.01" max="10" step="0.01" value="0.4"></label>
+          <div class="grid-2">
+            <label class="field">半径 R / mm<input id="h-R" class="num" type="number" min="0.05" max="5" step="0.01" value="0.36"></label>
+            <label class="field">配位数 Z<input id="h-Z" class="num" type="number" min="4" max="12" step="0.1" value="5.2"></label>
+            <label class="field">体积分数 φ<input id="h-phi" class="num" type="number" min="0.4" max="0.74" step="0.01" value="0.61"></label>
+            <label class="field">杨氏模量 / GPa<input id="h-E" class="num" type="number" min="1" max="400" step="1" value="65"></label>
+            <label class="field">泊松比 ν<input id="h-nu" class="num" type="number" min="0" max="0.45" step="0.01" value="0.22"></label>
+            <label class="field">密度 / kg·m⁻³<input id="h-rho" class="num" type="number" min="200" max="20000" step="10" value="2230"></label>
+          </div>
+          <label class="field">叠加实测
+            <select id="h-overlay">
+              <option value="glass">玻璃珠 1 / 2 / 3 mm</option>
+              <option value="steel">钢珠 1 / 2 / 3 mm</option>
+              <option value="all">全部颗粒</option>
+              <option value="mine">本次虚拟测量</option>
+              <option value="none">不叠加</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button class="btn" id="btn-glass" type="button">玻璃默认参数</button>
+            <button class="btn" id="btn-steel" type="button">钢的典型参数</button>
+            <button class="btn" id="btn-noise" type="button">加 ±5% 噪声并拟合</button>
+          </div>
+          <p class="small muted" id="h-radius-note"></p>
+        </article>
+        <article class="panel">
+          <h3>计算链</h3>
+          <div id="h-steps" class="eq"></div>
+          <div id="h-k"></div>
+        </article>
+      </div>
+      <div class="split-charts">
+        <article class="card"><h3>声速–压强（对数压力轴）</h3><canvas class="chart" id="chart-hertz"></canvas></article>
+        <article class="card"><h3>100 kPa–1 MPa 的双对数拟合</h3><canvas class="chart" id="chart-hertz-log"></canvas></article>
+      </div>
+    </section>
+
+    <section id="view-discuss" class="view" hidden>
+      <article class="card">
+        <h2>根据你的测量</h2>
+        <div id="my-conclusion"><p class="muted">还没有记入虚拟测量。可以先在实验台采集，或到数据处理页修改原始数据。</p></div>
+      </article>
+      <article class="card">
+        <h2>原实验得出的图像</h2>
+        <ol>
+          <li>六种颗粒的零载荷声速都低于空气。声波要绕过空隙、穿过接触点，接触刚度也远小于固体内部。</li>
+          <li>同种材料里，粒径较大的样品声速更高。细颗粒在同样长度上有更多界面，有效路径更长。</li>
+          <li>同一种样品的声速随载荷上升。压力使重叠量增大，法向接触刚度提高。</li>
+          <li>钢珠整体快于玻璃珠。钢的杨氏模量更高，同样压力下接触更硬。声速的平方与有效模量成正比。</li>
+          <li>在 20 kPa 以下，ln v 对 ln P 大致上升，但六种样品的指数并不相同，也不能收成统一的 1/6 或 1/4。水平放置去掉了大部分自重预压，力链仍然稀疏，管壁摩擦也使中心处的净压力更小。</li>
+        </ol>
+        <p class="small muted">定量的 v、r、s<sub>m</sub> 和幂指数以数据处理页的重算为准。空气对照为 350.3 m/s，r = 0.999941221，s<sub>m</sub> = 1.9 m/s。</p>
+      </article>
+      <div class="grid-2">
+        <article class="card">
+          <h3>误差从哪里来</h3>
+          <ul>
+            <li>螺杆间隙造成回程差。反向调节时刻度与真实间距不一致。</li>
+            <li>传感器在加载端。仓壁摩擦使内部应力低于名义压强。</li>
+            <li>每次补料后，局部 φ 和 Z 会变，声速跟着波动。</li>
+            <li>低压下首波很弱，手动画光标会带来 Δt 的随机误差。</li>
+            <li>80 mm 管壁让力链更偏向轴向，和无限大各向同性介质的假设不同。</li>
+            <li>湿度和温度会改变颗粒表面的液桥与空气声速。偏心加载会污染传感器读数。</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>创新点与用途</h3>
+          <ul>
+            <li>水平放置、水平加载，减弱重力对 0–20 kPa 测量的影响。</li>
+            <li>压力传感器直接给出载荷，而不是只靠改变堆高来估计压力。</li>
+            <li>测距和加载共用螺杆，探头有保护套和耦合剂。</li>
+            <li>真实低压数据加上赫兹高压计算，覆盖装置到不了的压力。</li>
+          </ul>
+          <p class="small">声速综合了密度、填充率、含水率和接触刚度，可用于路基压实、粮仓和粉体工艺中的状态估计，也是检验赫兹接触与力链演化的基础实验。</p>
+        </article>
+      </div>
+      <article class="card">
+        <h3>器材成本（修订版报告）</h3>
+        <table>
+          <thead><tr><th>器材</th><th>单价</th><th>数量</th><th>小计 / 元</th></tr></thead>
+          <tbody>
+            <tr><td>颗粒物质</td><td>40 元/千克</td><td>6 kg</td><td>240</td></tr>
+            <tr><td>压电陶瓷探头</td><td>980 元/个</td><td>2</td><td>1960</td></tr>
+            <tr><td>压力传感器</td><td>38.23 元/个</td><td>1</td><td>38.23</td></tr>
+            <tr><td>数字显示模块</td><td>24.75 元/个</td><td>1</td><td>24.75</td></tr>
+            <tr><td>3D 打印耗材</td><td>400 元/套</td><td>1</td><td>400</td></tr>
+            <tr><td>信号放大器</td><td>150 元/套</td><td>1</td><td>150</td></tr>
+            <tr><td>信号发生器、示波器</td><td colspan="2">借用</td><td>—</td></tr>
+            <tr><td>合计</td><td colspan="2"></td><td>2773</td></tr>
+          </tbody>
+        </table>
+      </article>
+      <article class="card">
+        <h3>参考文献</h3>
+        <ol class="refs small">
+          <li>Jia X, Caroli C, Velicky B. Phys. Rev. Lett. 82, 1863 (1999).</li>
+          <li>Goddard J D. Proc. R. Soc. Lond. A 430, 105 (1990).</li>
+          <li>de Gennes P-G. Europhys. Lett. 35, 145 (1996).</li>
+          <li>Makse H A, Gland N, Johnson D L, Schwartz L M. Phys. Rev. Lett. 83, 5070 (1999); Phys. Rev. E 70, 061302 (2004).</li>
+          <li>张攀等. 物理学报 65, 024502 (2016).</li>
+          <li>周志刚. 颗粒固体的力学响应和声波传播的研究. 中国科学院大学博士学位论文, 2017.</li>
+          <li>李向亭, 朱连根, 黄学东. 物理实验 32(11), 36 (2012).</li>
+        </ol>
+      </article>
+    </section>
+  </main>
+  <footer>速强团队 · 水平加载颗粒声速实验的虚拟仿真。计算与原始数据表在浏览器内完成，不需要安装环境。</footer>
+  <div id="toast" class="toast" hidden></div>
+  <script src="js/data.js" defer></script>
+  <script src="js/physics.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
