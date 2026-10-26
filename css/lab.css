@@ -178,7 +178,8 @@ canvas { width: 100%; display: block; }
 #apparatus { height: 232px; }
 #scope { height: 292px; background: #07140f; border-radius: 8px; touch-action: none; }
 #scope:focus-visible { outline: 2px solid rgba(141, 255, 176, 0.7); outline-offset: 2px; }
-#chains { height: 180px; background: #101820; border-radius: 10px; }
+#chains { height: 260px; background: #0a3d86; border-radius: 10px; }
+.actions.tight { margin-top: 8px; }
 .chart { height: 280px; background: #101820; border-radius: 10px; }
 .lcd {
   font-family: var(--mono);

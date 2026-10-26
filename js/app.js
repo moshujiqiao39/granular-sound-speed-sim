@@ -5,25 +5,10 @@
   const DELAY_MS = 0.05;
   const KEY = "granular-lab-v1";
 
-  const PACK = [];
-  for (let r = 0; r < 7; r++) {
-    for (let c = 0; c < 16; c++) {
-      PACK.push({ x: 26 + c * 22 + (r % 2 ? 11 : 0), y: 20 + r * 20 });
-    }
-  }
-  const LINKS = [];
-  for (let i = 0; i < PACK.length; i++) {
-    for (let j = i + 1; j < PACK.length; j++) {
-      const dx = PACK[j].x - PACK[i].x;
-      const dy = PACK[j].y - PACK[i].y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 30) LINKS.push({ i, j, align: Math.abs(dx) / dist });
-    }
-  }
-
   const state = {
     view: "guide",
     sampleId: "air",
+    hopper: "air",
     custom: { d: 2, E: 65, nu: 0.22, rho: 2230 },
     T: 31.4,
     mass: 0,
@@ -32,9 +17,12 @@
     L: 50,
     Z: 5.2,
     phi: 0.61,
+    zJitter: 0,
+    phiJitter: 0,
     eta: 1,
     freqKHz: 36,
     vpp: 20,
+    gain: 1,
     pulses: 6,
     periodMs: 60,
     coupling: true,
@@ -116,13 +104,27 @@
     return s.id === "custom" ? state.custom.d : s.diameterMm || 2;
   }
 
+  function packingNow() {
+    if (state.sampleId === "air") return { Z: state.Z, phi: state.phi };
+    return {
+      Z: clamp(state.Z + (Number(state.zJitter) || 0), 4, 8),
+      phi: clamp(state.phi + (Number(state.phiJitter) || 0), 0.45, 0.74)
+    };
+  }
+
+  function rollPacking() {
+    state.zJitter = clamp(gauss() * 0.1, -0.22, 0.22);
+    state.phiJitter = clamp(gauss() * 0.01, -0.02, 0.02);
+  }
+
   function trueVelocity() {
     if (state.sampleId === "air") return Phys.airSpeed(state.T);
     const sample = sampleById(state.sampleId);
     const Peff = Math.max(0, nominalPressure() * state.eta);
     let material = sample.material;
     let d = sample.diameterMm;
-    let scale = Phys.packingFactor(state.Z, state.phi);
+    const pack = packingNow();
+    let scale = Phys.packingFactor(pack.Z, pack.phi);
     if (sample.id === "custom") {
       material = "glass";
       d = state.custom.d;
@@ -149,11 +151,12 @@
     const amp = Math.max(0.08, state.vpp / 20);
     const pulseF = Math.min(1.15, Math.max(0.35, state.pulses / 6));
     const coup = state.coupling ? 1 : 0.3;
+    const gain = clamp(Number(state.gain) || 1, 0.5, 3);
     const P = Math.max(0, nominalPressure() * state.eta);
     let attenLen = 520;
     if (state.sampleId !== "air") attenLen = 58 * (0.35 + 0.65 * Math.min(P / 15000, 1.3));
     const atten = Math.exp(-Lmm / attenLen);
-    let snr = resonance * amp * pulseF * coup * atten;
+    let snr = resonance * amp * pulseF * coup * atten * gain;
     if (state.periodMs < 8) snr *= 0.55;
     return { resonance, atten, snr: Math.max(0.04, snr) };
   }
@@ -203,6 +206,10 @@
           L: state.L,
           Z: state.Z,
           phi: state.phi,
+          zJitter: state.zJitter,
+          phiJitter: state.phiJitter,
+          hopper: state.hopper,
+          gain: state.gain,
           eta: state.eta,
           freqKHz: state.freqKHz,
           vpp: state.vpp,
@@ -227,11 +234,13 @@
       const data = JSON.parse(raw);
       if (Array.isArray(data.book) && data.book.length >= 40 && data.book[0].points) state.book = data.book;
       if (Array.isArray(data.runs)) state.runs = data.runs;
-      ["sampleId", "T", "mass", "g", "tubeMm", "L", "Z", "phi", "eta", "freqKHz", "vpp", "pulses", "periodMs", "noise", "dataTab", "bookSample", "mineSample", "selectedId", "draftKey"].forEach((k) => {
+      ["sampleId", "hopper", "T", "mass", "g", "tubeMm", "L", "Z", "phi", "zJitter", "phiJitter", "eta", "freqKHz", "vpp", "gain", "pulses", "periodMs", "noise", "dataTab", "bookSample", "mineSample", "selectedId", "draftKey"].forEach((k) => {
         if (data[k] !== undefined && data[k] !== null) state[k] = data[k];
       });
       if (typeof data.coupling === "boolean") state.coupling = data.coupling;
       if (typeof data.backlash === "boolean") state.backlash = data.backlash;
+      if (data.hopper && !sampleById(data.hopper)) state.hopper = state.sampleId;
+      if (!data.hopper) state.hopper = state.sampleId;
       if (data.custom) state.custom = Object.assign(state.custom, data.custom);
       if (Array.isArray(data.points)) state.points = data.points;
       if (data.drafts && typeof data.drafts === "object") state.drafts = data.drafts;
@@ -303,12 +312,13 @@
     $("noise").value = state.noise;
     $("coupling").checked = state.coupling;
     $("backlash").checked = state.backlash;
-    $("sample").value = state.sampleId;
+    $("sample").value = state.hopper || state.sampleId;
+    $("gain").value = state.gain;
     $("custom-d").value = state.custom.d;
     $("custom-E").value = state.custom.E;
     $("custom-nu").value = state.custom.nu;
     $("custom-rho").value = state.custom.rho;
-    $("custom-box").hidden = state.sampleId !== "custom";
+    $("custom-box").hidden = state.hopper !== "custom" && state.sampleId !== "custom";
     $("usdiv").value = String(state.usPerDiv);
     $("show-ref").checked = state.showRef;
   }
@@ -321,6 +331,24 @@
     $("phi-val").textContent = Number(state.phi).toFixed(3);
     $("eta-val").textContent = Number(state.eta).toFixed(2);
     $("noise-val").textContent = Number(state.noise).toFixed(1);
+    $("gain-val").textContent = Number(state.gain).toFixed(1);
+    const inside = sampleById(state.sampleId);
+    const ready = sampleById(state.hopper);
+    if (state.sampleId === "air") {
+      $("tube-status").textContent = state.hopper === "air"
+        ? "管内现在是空的，可以直接测空气。"
+        : "管内现在是空的。下拉框里的" + ready.name + "还没装进去。";
+    } else if (state.hopper === state.sampleId) {
+      $("tube-status").textContent = "管内是" + inside.name + "。再点一次装入，会按新的堆积重测。";
+    } else {
+      $("tube-status").textContent = "管内是" + inside.name + "。要改成" + ready.name + "，请先倒出。";
+    }
+    if (state.sampleId === "air" || (state.zJitter === 0 && state.phiJitter === 0)) {
+      $("pack-note").textContent = "每次从填料口装入，配位数和体积分数都会在滑块数值附近重新落一次。";
+    } else {
+      const pack = packingNow();
+      $("pack-note").textContent = "这次装填 Z = " + pack.Z.toFixed(2) + "，φ = " + pack.phi.toFixed(3) + "。滑块是中心值，声速按这次的堆积计算。";
+    }
     $("temp-note").textContent = state.sampleId === "air"
       ? "空气声速用 v = 331.3 + 0.606 θ。31.4 °C 时约为 350.3 m/s，与空管拟合一致。"
       : "颗粒声速由接触刚度决定，这个模型不随室温改变。温度只影响空气对照。";
@@ -337,7 +365,7 @@
     const warn = $("warn-snr");
     if (q.snr < 0.22) {
       warn.hidden = false;
-      warn.textContent = "接收信号偏弱，寻峰会有更大的时间抖动。可以把频率调回 36 kHz、加大幅度、涂耦合剂，或缩短间距、提高载荷。";
+      warn.textContent = "接收信号偏弱，寻峰会有更大的时间抖动。可以把频率调回 36 kHz、加大幅度或放大器增益、涂耦合剂，或缩短间距、提高载荷。";
     } else warn.hidden = true;
     const n = particleEstimate();
     $("particle-count").textContent = state.sampleId === "air"
@@ -370,9 +398,10 @@
     const R = d / 2;
     const L = acousticLength(state.L) / 1000;
     const Rt = state.tubeMm / 2000;
+    const pack = packingNow();
     const vol = Math.PI * Rt * Rt * L;
     const vs = (4 / 3) * Math.PI * R * R * R;
-    return Math.max(0, Math.round(state.phi * vol / vs));
+    return Math.max(0, Math.round(pack.phi * vol / vs));
   }
 
   function renderLiveFit() {
@@ -406,8 +435,8 @@
     runs.forEach((r) => {
       if (r.sampleId !== "air" && r.massKg > 0) counts[r.sampleId] = (counts[r.sampleId] || 0) + 1;
     });
-    const enough = Object.keys(counts).some((k) => counts[k] >= 3);
-    const items = [[air, "空气声速已记入，且不少于 4 个间距"], [zero, "至少一种颗粒的零载荷已记入"], [enough, "同一样品有不少于 3 个正载荷，可估幂指数"]];
+    const enough = Object.keys(counts).some((k) => counts[k] >= 6);
+    const items = [[air, "空气声速已记入，且不少于 4 个间距"], [zero, "至少一种颗粒的零载荷已记入"], [enough, "同一样品有不少于 6 个正载荷，可估幂指数"]];
     $("checklist").innerHTML = "<h4>进度</h4>" + items.map(([ok, text]) => "<div class='small'>" + (ok ? "● " : "○ ") + text + "</div>").join("");
   }
 
@@ -567,7 +596,7 @@
     const q = signalQuality(state.L);
     const env = Math.exp(-x / (period * 7)) * (1 - Math.exp(-x / (period * 0.75)));
     const late = x > period * 9 ? 0.4 * Math.exp(-(x - period * 9) / (period * 5)) : 0;
-    const amp = (state.vpp / 2) * q.atten * (state.coupling ? 1 : 0.32) * q.resonance;
+    const amp = (state.vpp / 2) * q.atten * (state.coupling ? 1 : 0.32) * q.resonance * clamp(Number(state.gain) || 1, 0.5, 3);
     const wave = env * Math.sin((2 * Math.PI * x) / period) + late * Math.sin((2 * Math.PI * (x - period * 9)) / period);
     const n = (hash01(Math.floor(tUs / 2)) - 0.5) * (0.22 / Math.max(q.snr, 0.15));
     return amp * (wave + n);
@@ -661,33 +690,98 @@
     if (!view) return;
     const { ctx, w, h } = view;
     ctx.clearRect(0, 0, w, h);
-    const P = Math.max(0, nominalPressure() * state.eta);
-    const level = Math.max(0, Math.min(1.5, P / 16000));
-    const sx = w / 390;
-    const sy = h / 160;
-    ctx.lineCap = "round";
-    LINKS.forEach((link) => {
-      const strength = (0.18 + link.align) * (0.28 + level);
-      if (strength < 0.34) return;
-      const a = PACK[link.i];
-      const b = PACK[link.j];
-      ctx.strokeStyle = "rgba(228, 177, 90," + Math.min(0.9, strength).toFixed(3) + ")";
-      ctx.lineWidth = 1 + strength * 2.4;
+    const P = state.sampleId === "air" ? 0 : Math.max(0, nominalPressure() * state.eta);
+    const level = Math.max(0, Math.min(1.35, P / 14000));
+    const cx = w * 0.48;
+    const cy = h * 0.5;
+    const radius = Math.min(w * 0.34, h * 0.42);
+    const diskR = Math.max(5, radius / 7.4);
+    const pistonR = diskR * 2.35;
+    const push = Math.min(level, 1) * diskR * 0.7;
+    const px = cx + radius - pistonR * 0.15 - push;
+    const py = cy;
+
+    ctx.fillStyle = "#0a3d86";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#e8922a";
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f6f1e6";
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+    ctx.clip();
+
+    const disks = [];
+    if (state.sampleId !== "air") {
+      const step = diskR * 2.08;
+      for (let row = -9; row <= 9; row++) {
+        for (let col = -9; col <= 9; col++) {
+          const x = cx + col * step + (Math.abs(row) % 2 ? step / 2 : 0);
+          const y = cy + row * step * 0.9;
+          if (Math.hypot(x - cx, y - cy) > radius - diskR * 1.05) continue;
+          if (Math.hypot(x - px, y - py) < pistonR + diskR * 0.15) continue;
+          disks.push({ x, y });
+        }
+      }
+    }
+    const contacts = [];
+    for (let i = 0; i < disks.length; i++) {
+      for (let j = i + 1; j < disks.length; j++) {
+        const dx = disks[j].x - disks[i].x;
+        const dy = disks[j].y - disks[i].y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > diskR * 2.35) continue;
+        const align = Math.abs(dx) / dist;
+        const score = align * 0.72 + hash01(i * 17 + j * 5) * 0.28;
+        const need = 0.9 - level * 0.5;
+        if (level > 0.05 && score > need) contacts.push({ i, j, align, score });
+      }
+    }
+    const hot = {};
+    contacts.forEach((c) => { hot[c.i] = true; hot[c.j] = true; });
+    disks.forEach((p, i) => {
       ctx.beginPath();
-      ctx.moveTo(a.x * sx, a.y * sy);
-      ctx.lineTo(b.x * sx, b.y * sy);
+      ctx.arc(p.x, p.y, diskR * 0.92, 0, Math.PI * 2);
+      ctx.fillStyle = hot[i] ? "#ffe38a" : "#e2b84a";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(120, 78, 20, 0.35)";
+      ctx.lineWidth = 1;
       ctx.stroke();
     });
-    PACK.forEach((p) => {
-      ctx.fillStyle = state.sampleId === "air" ? "#d5dde6" : sampleById(state.sampleId).bead || "#ccc";
+    contacts.forEach((c) => {
+      const a = disks[c.i];
+      const b = disks[c.j];
+      ctx.strokeStyle = "rgba(255, 252, 230, " + Math.min(0.95, 0.45 + c.score * 0.5).toFixed(3) + ")";
+      ctx.lineWidth = 1.2 + c.align * 2.2;
       ctx.beginPath();
-      ctx.arc(p.x * sx, p.y * sy, 4.2 * Math.min(sx, sy), 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
     });
-    let stage = "零载荷或极低压：只有少数近乎水平的接触在传力，声波路径稀疏。";
-    if (P >= 12000) stage = "载荷继续增加后，更多接触连成网。声速仍会上升，但增幅往往变缓。相对 0.4 MPa，这里依然是弱压强。";
-    else if (P >= 3000) stage = "压力升高：力链分叉、变粗，平行通道变多，声速通常上升得更明显。";
-    $("chain-caption").textContent = stage + " 当前内部压力约 " + fmt(P, 0) + " Pa。";
+    if (state.sampleId !== "air") {
+      ctx.fillStyle = "#6d624c";
+      ctx.beginPath();
+      ctx.arc(px, py, pistonR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#3a3428";
+      ctx.fillRect(px, py - 1.5, radius, 3);
+    }
+    ctx.restore();
+
+    let stage = "空管里没有颗粒，力链无从形成。";
+    if (state.sampleId !== "air") {
+      if (P < 800) stage = "还未加压。颗粒大多只是挨着，几乎看不到力链。";
+      else if (P < 4500) stage = "第一次加较小压力，力链稀疏。";
+      else if (P < 11000) stage = "第二次增大压力，颗粒接触点增多，力链数量增加。";
+      else stage = "第三次进一步增大压力，力链形成较为稳定的网状结构。相对 0.4 MPa，这里仍然是弱压强。";
+      stage += " 当前内部压力约 " + fmt(P, 0) + " Pa。";
+    }
+    $("chain-caption").textContent = stage;
   }
 
   function alignCursors() {
@@ -826,15 +920,64 @@
     const box = $("exponent-box");
     if (!selected || selected.sampleId === "air") {
       box.innerHTML = "<p class='small muted'>空气是对照，不对它做压强幂指数。当前分析使用 g = " + state.g + " m/s²，管内径 " + state.tubeMm + " mm。</p>";
+      renderHertzCompare();
       return;
     }
     const group = dataset().filter((r) => r.sampleId === selected.sampleId && (selected.sampleId !== "custom" || Math.abs(r.diameterMm - selected.diameterMm) < 0.051)).map(annotate).filter((r) => r.massKg > 0 && r.fit.ok && r.fit.slope > 0);
     if (group.length < 2) {
       box.innerHTML = "<p class='small muted'>这个样品至少还需要 2 个正载荷，才能拟合 ln v 对 ln P 的斜率。</p>";
+      renderHertzCompare();
       return;
     }
     const fl = Phys.fitLogVelocity(group.map((r) => ({ P: r.P, v: r.fit.slope })));
     box.innerHTML = "<p><b>" + selected.name + "</b> 的幂指数 k = " + fmt(fl.slope, 5) + "，R² = " + fmt(fl.r2, 5) + "。<br>与 1/6（" + fmt(1 / 6, 4) + "）相差 " + fmt(fl.slope - 1 / 6, 4) + "，与 1/4（0.2500）相差 " + fmt(fl.slope - 0.25, 4) + "。<br><span class='small muted'>压强按 g = " + state.g + "、D = " + state.tubeMm + " mm 计算。改这两个数会改变 k，不会改变各载荷的声速。</span></p>";
+    renderHertzCompare();
+  }
+
+  function hertzMaterial(run) {
+    if (run.sampleId === "custom") {
+      return { E: state.custom.E * 1e9, nu: state.custom.nu, rho: state.custom.rho };
+    }
+    return Data.MATERIALS[run.material] || null;
+  }
+
+  function renderHertzCompare() {
+    const el = $("hertz-compare");
+    const selected = findSelected();
+    if (!selected) {
+      el.innerHTML = "";
+      return;
+    }
+    const run = annotate(selected);
+    if (run.sampleId === "air") {
+      el.innerHTML = "<p class='small muted'>空气对照不使用赫兹接触公式。</p>";
+      return;
+    }
+    if (!(run.P > 0) || !run.fit.ok || !(run.fit.slope > 0)) {
+      el.innerHTML = "<p class='small muted'>零载荷的名义压强是 0。赫兹公式要从正压强外推，这一行只保留时差法声速。</p>";
+      return;
+    }
+    const mat = hertzMaterial(run);
+    if (!mat) {
+      el.innerHTML = "";
+      return;
+    }
+    const pred = Phys.hertz({
+      P: run.P,
+      R: Data.LAB.hertzRmm / 1000,
+      Z: Data.LAB.Z,
+      phi: Data.LAB.phi,
+      E: mat.E,
+      nu: mat.nu,
+      rho: mat.rho
+    });
+    if (!pred.ok) {
+      el.innerHTML = "<p class='small muted'>当前材料参数无法外推赫兹声速。</p>";
+      return;
+    }
+    const dv = run.fit.slope - pred.v;
+    const pct = dv / pred.v * 100;
+    el.innerHTML = "<p>把高压区同一套公式外推到这个载荷：P = " + fmt(run.P, 1) + " Pa 时，理论声速 <b>" + fmt(pred.v, 1) + "</b> m/s，拟合声速 <b>" + fmt(run.fit.slope, 1) + "</b> m/s，相差 " + (dv >= 0 ? "+" : "") + fmt(dv, 1) + " m/s（" + (pct >= 0 ? "+" : "") + fmt(pct, 1) + "%）。</p><p class='small muted'>0.4 MPa 以下，它只说明接触会随压力变硬。颗粒还会滑移和重排，实测不必贴着这条曲线。理想公式里半径会相消，所以理论值不随粒径改变。</p>";
   }
 
   function renderEditor(force) {
@@ -1280,6 +1423,45 @@
     return bits.join("");
   }
 
+  function pourSample() {
+    const next = state.hopper;
+    if (next === "air") {
+      toast("空气是空管。要测空气，请先把颗粒倒出。");
+      return;
+    }
+    if (state.sampleId !== "air" && state.sampleId !== next) {
+      toast("管内还有" + sampleById(state.sampleId).name + "。请先倒出，再装入新的颗粒。");
+      return;
+    }
+    const refill = state.sampleId === next;
+    const hadPoints = state.points.length > 0;
+    stashDraft();
+    state.sampleId = next;
+    rollPacking();
+    state.points = [];
+    state.draftKey = keyNow();
+    state.drafts[state.draftKey] = [];
+    const pack = packingNow();
+    toast((refill ? "已重新装填。" : "已从填料口装入。") + "这次 Z = " + pack.Z.toFixed(2) + "，φ = " + pack.phi.toFixed(3) + "。" + (hadPoints ? "未保存的读数已清空。" : ""));
+    drawBench();
+    persist();
+  }
+
+  function dumpSample() {
+    if (state.sampleId === "air") {
+      toast("管内已经是空的。");
+      return;
+    }
+    stashDraft();
+    state.sampleId = "air";
+    state.zJitter = 0;
+    state.phiJitter = 0;
+    swapDraft();
+    toast("已从填料口倒出。现在可以测空气，或装入另一种颗粒。");
+    drawBench();
+    persist();
+  }
+
   function setMass(v) {
     stashDraft();
     state.mass = clamp(Number(v), 0, 12);
@@ -1322,21 +1504,22 @@
       btn.addEventListener("click", () => show(btn.dataset.view));
     });
     $("sample").addEventListener("change", () => {
-      stashDraft();
-      state.sampleId = $("sample").value;
-      $("custom-box").hidden = state.sampleId !== "custom";
-      swapDraft();
+      state.hopper = $("sample").value;
+      $("custom-box").hidden = state.hopper !== "custom" && state.sampleId !== "custom";
       drawBench();
       persist();
     });
+    $("btn-pour").addEventListener("click", pourSample);
+    $("btn-dump").addEventListener("click", dumpSample);
     ["custom-d", "custom-E", "custom-nu", "custom-rho"].forEach((id) => {
       $(id).addEventListener("input", () => {
-        if (id === "custom-d") stashDraft();
+        const inTube = state.sampleId === "custom" && id === "custom-d";
+        if (inTube) stashDraft();
         state.custom.d = clamp(Number($("custom-d").value), 1, 3);
         state.custom.E = clamp(Number($("custom-E").value), 1, 400);
         state.custom.nu = clamp(Number($("custom-nu").value), 0, 0.45);
         state.custom.rho = clamp(Number($("custom-rho").value), 200, 20000);
-        if (id === "custom-d") swapDraft();
+        if (inTube) swapDraft();
         drawBench();
         persist();
       });
@@ -1355,6 +1538,7 @@
     $("eta").addEventListener("input", () => { state.eta = clamp(Number($("eta").value), 0.5, 1); drawBench(); persist(); });
     bindNumber("freq", "freqKHz", 20, 60, false);
     bindNumber("vpp", "vpp", 1, 20, false);
+    $("gain").addEventListener("input", () => { state.gain = clamp(Number($("gain").value), 0.5, 3); drawBench(); persist(); });
     bindNumber("pulses", "pulses", 1, 12, true);
     bindNumber("period", "periodMs", 1, 200, false);
     $("noise").addEventListener("input", () => { state.noise = clamp(Number($("noise").value), 0, 3); drawBench(); persist(); });

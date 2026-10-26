@@ -6,7 +6,7 @@
   <title>颗粒物质声速虚拟仿真实验</title>
   <meta name="description" content="基于时差法与压力传感器，水平加载测量玻璃珠和钢珠中声速的虚拟仿真实验。">
   <link rel="icon" href="favicon.svg">
-  <link rel="stylesheet" href="css/lab.css">
+  <link rel="stylesheet" href="css/lab.css?v=5">
 </head>
 <body>
   <header class="top">
@@ -70,7 +70,7 @@
           <h3>你在这个网站里可以改什么</h3>
           <ul>
             <li>样品、粒径、载荷、探头间距、室温、管内径和重力加速度。</li>
-            <li>信号频率、幅度、脉冲个数、耦合剂、回程差和读数噪声。</li>
+            <li>信号频率、幅度、放大器增益、脉冲个数、耦合剂、回程差和读数噪声。</li>
             <li>配位数 Z、体积分数 φ、管壁传力效率。</li>
             <li>示波器光标位置，或直接改数据表里的每一个 t 和 L。</li>
             <li>高压仿真中的半径、模量、泊松比、密度和压强。</li>
@@ -83,10 +83,10 @@
         <ol class="steps">
           <li>连接信号发生器、发射探头 S1、接收探头 S2、放大器和示波器，设定脉冲串。</li>
           <li>空管测量空气声速，用来检查装置。本实验空气拟合结果为 350.3 m/s。</li>
-          <li>装入一种颗粒，不加外载荷，移动 S2，读取至少 6 组 (L, t)，拟合声速。</li>
+          <li>从填料口装入一种颗粒，不加外载荷，移动 S2，读取至少 6 组 (L, t)，拟合声速。每次装入，堆积都会略有不同。</li>
           <li>转动测距螺杆逐级加载。传感器稳定后，在每个载荷下重新做时差法。</li>
           <li>把质量换算成名义压强，对 ln v 与 ln P 拟合，得到该样品的幂指数。</li>
-          <li>更换材质或粒径。外加载荷系列覆盖四种样品；零载荷覆盖全部六种，外加空气对照。</li>
+          <li>从填料口倒出后，再装入另一种材质或粒径。外加载荷系列覆盖四种样品；零载荷覆盖全部六种，外加空气对照。同一样品至少做 6 个正载荷。</li>
           <li>真实装置到不了 0.4 MPa 以上。高压部分改用赫兹公式计算，并和低压实测对比。</li>
         </ol>
         <p class="small muted">操作时沿同一方向转动螺杆，加完载荷等波形稳定再读数，避免回程差和颗粒重排。</p>
@@ -180,9 +180,15 @@
       <div class="bench-grid">
         <aside class="panel scroll-panel">
           <h3>实验条件</h3>
-          <label class="field">样品
+          <label class="field">准备装入的样品
             <select id="sample"></select>
           </label>
+          <p class="small" id="tube-status"></p>
+          <div class="actions tight">
+            <button class="btn primary" id="btn-pour" type="button">从填料口装入</button>
+            <button class="btn ghost" id="btn-dump" type="button">倒出</button>
+          </div>
+          <p class="small muted" id="pack-note"></p>
           <div id="custom-box" hidden>
             <label class="field">粒径 / mm<input id="custom-d" class="num" type="number" min="1" max="3" step="0.1" value="2"></label>
             <label class="field">杨氏模量 / GPa<input id="custom-E" class="num" type="number" min="1" max="400" step="1" value="65"></label>
@@ -232,6 +238,10 @@
             <summary>信号发生器 AFG-2225</summary>
             <label class="field">频率 / kHz<input id="freq" class="num" type="number" min="20" max="60" step="0.1" value="36"></label>
             <label class="field">幅度 / Vpp<input id="vpp" class="num" type="number" min="1" max="20" step="0.5" value="20"></label>
+            <label class="field"><span>放大器增益 <b id="gain-val">1.0</b></span>
+              <input id="gain" type="range" min="0.5" max="3" step="0.1" value="1">
+            </label>
+            <p class="small muted">接收信号经放大器后再进示波器。增益改变波形高低和读数抖动，不改变声速。</p>
             <label class="field">每串脉冲数<input id="pulses" class="num" type="number" min="1" max="12" step="1" value="6"></label>
             <label class="field">重复周期 / ms<input id="period" class="num" type="number" min="1" max="200" step="1" value="60"></label>
           </details>
@@ -263,8 +273,8 @@
             <p class="small muted">参考线是仿真里的首波位置，用来事后核对。点一下示波器后，方向键移动 C2，按住 Shift 移动 C1。</p>
           </div>
           <div class="panel">
-            <h3>力链示意</h3>
-            <canvas id="chains"></canvas>
+            <h3>光弹力链</h3>
+            <canvas id="chains" aria-label="光弹圆盘力链，随载荷变亮"></canvas>
             <p id="chain-caption" class="small chain-note"></p>
           </div>
         </div>
@@ -335,6 +345,7 @@
           </div>
           <p class="small muted">点选一行，可在右侧查看并修改该载荷的 t 和 L。</p>
           <div id="exponent-box"></div>
+          <div id="hertz-compare"></div>
         </article>
         <article class="card">
           <h3 id="editor-title">数据点</h3>
@@ -485,8 +496,8 @@
   </main>
   <footer>速强团队 · 水平加载颗粒声速实验的虚拟仿真。计算与原始数据表在浏览器内完成，不需要安装环境。</footer>
   <div id="toast" class="toast" hidden></div>
-  <script src="js/data.js?v=4" defer></script>
-  <script src="js/physics.js?v=4" defer></script>
-  <script src="js/app.js?v=4" defer></script>
+  <script src="js/data.js?v=5" defer></script>
+  <script src="js/physics.js?v=5" defer></script>
+  <script src="js/app.js?v=5" defer></script>
 </body>
 </html>
