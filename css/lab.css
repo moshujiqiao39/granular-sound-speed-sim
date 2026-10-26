@@ -77,6 +77,7 @@ nav button[aria-current="page"] {
   border-color: var(--amber);
 }
 nav button:hover { border-color: var(--line); color: var(--text); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 nav button[aria-current="page"]:hover { color: #1b1408; }
 
 main { width: min(1180px, calc(100% - 28px)); margin: 22px auto 64px; }
@@ -176,6 +177,7 @@ summary { cursor: pointer; color: var(--amber); }
 canvas { width: 100%; display: block; }
 #apparatus { height: 232px; }
 #scope { height: 292px; background: #07140f; border-radius: 8px; touch-action: none; }
+#scope:focus-visible { outline: 2px solid rgba(141, 255, 176, 0.7); outline-offset: 2px; }
 #chains { height: 180px; background: #101820; border-radius: 10px; }
 .chart { height: 280px; background: #101820; border-radius: 10px; }
 .lcd {
@@ -239,7 +241,8 @@ button.del {
   color: #ffb4a8;
   border-color: rgba(255, 144, 124, 0.45);
 }
-.point-scroll { max-height: 220px; overflow: auto; margin: 8px 0; }
+.point-scroll, .editor-scroll { max-height: 280px; overflow: auto; margin: 8px 0; }
+.editor-scroll { max-height: 340px; }
 
 @media (max-width: 1020px) {
   .hero, .bench-grid, .grid-2, .grid-3, .split-charts, .stats { grid-template-columns: 1fr; }

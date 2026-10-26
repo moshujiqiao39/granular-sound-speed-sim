@@ -43,7 +43,7 @@
     noise: 1,
     usPerDiv: 50,
     timebaseManual: false,
-    showRef: true,
+    showRef: false,
     cursor1: 7,
     cursor2: 200,
     drag: null,
@@ -619,6 +619,11 @@
     ctx.fillText("CH1", 8, y1);
     ctx.fillStyle = "#8dffb0";
     ctx.fillText("CH2", 8, y2);
+    ctx.fillStyle = "#6f8f7a";
+    ctx.font = "11px Consolas, monospace";
+    ctx.fillText("0", left, h - 6);
+    const endLabel = windowUs + " μs";
+    ctx.fillText(endLabel, Math.max(left, left + plotW - ctx.measureText(endLabel).width), h - 6);
   }
 
   function strokeWave(ctx, left, plotW, windowUs, center, yOf, fn, color) {
@@ -697,7 +702,10 @@
       toast("时间差要大于 0。请把 C2 放到 C1 右侧。");
       return;
     }
-    if (state.points.some((p) => Math.abs(p.Lmm - state.L) < 0.2)) toast("这个间距附近已经有一组数据。");
+    if (state.points.some((p) => Math.abs(p.Lmm - state.L) < 0.2)) {
+      toast("这个间距附近已经有一组数据。请改间距，或先删掉那一行。");
+      return;
+    }
     state.points.push({ Lmm: Number(state.L), tMs: dt });
     renderPoints();
     renderLiveFit();
@@ -718,7 +726,7 @@
     state.cursor1 = period * 0.25;
     state.cursor2 = state.cursor1 + last.tMs * 1000;
     state.draftKey = keyNow();
-    toast("已生成 6 个间距。噪声来自当前信噪比，改表中的数字会改变拟合。");
+    toast("已用 6 个间距替换本载荷尚未保存的记录。噪声来自当前信噪比。");
     drawBench();
     persist();
   }
@@ -750,7 +758,8 @@
     state.points = [];
     state.drafts[state.draftKey] = [];
     state.drafts[keyNow()] = [];
-    toast(fit.n < 6 ? "已记入 " + fit.n + " 点。原实验每个载荷使用 6 个间距。" : "这个载荷已记入结果。可以改变质量后再测。");
+    const note = fit.n < 6 ? "原实验每个载荷使用 6 个间距。" : "可以改变质量后再测。";
+    toast("已记入。斜率声速 " + fmt(fit.slope, 2) + " m/s，r = " + fmt(fit.r, 6) + "。" + note);
     drawBench();
     persist();
   }
@@ -762,8 +771,16 @@
   function visibleRuns() {
     const all = dataset();
     if (state.dataTab === "book") return all.filter((r) => r.sampleId === state.bookSample);
-    if (state.mineSample === "all") return all;
-    return all.filter((r) => r.sampleId === state.mineSample);
+    const rows = state.mineSample === "all" ? all.slice() : all.filter((r) => r.sampleId === state.mineSample);
+    const order = Data.SAMPLES.map((s) => s.id);
+    rows.sort((a, b) => {
+      const ia = order.indexOf(a.sampleId);
+      const ib = order.indexOf(b.sampleId);
+      if (ia !== ib) return ia - ib;
+      if (Math.abs(a.diameterMm - b.diameterMm) > 0.051) return a.diameterMm - b.diameterMm;
+      return a.massKg - b.massKg;
+    });
+    return rows;
   }
 
   function ensureSelection() {
@@ -826,8 +843,10 @@
     $("editor-title").textContent = run ? run.name + " · " + (run.sampleId === "air" ? "空气" : Number(run.massKg).toFixed(2) + " kg") : "数据点";
     if (!run) {
       body.innerHTML = "";
+      $("btn-del-run").hidden = true;
       return;
     }
+    $("btn-del-run").hidden = state.dataTab !== "mine";
     if (!force && document.activeElement && document.activeElement.tagName === "INPUT" && body.contains(document.activeElement)) return;
     body.innerHTML = run.points.map((p, i) =>
       "<tr data-i='" + i + "'><td><input class='num t' type='number' step='0.0001' value='" + Number(p[0]).toFixed(4) + "'></td><td><input class='num L' type='number' step='0.001' value='" + Number(p[1]).toFixed(3) + "'></td><td><button type='button' class='del' data-del='" + i + "' aria-label='删除第 " + (i + 1) + " 行'>×</button></td></tr>"
@@ -1214,7 +1233,12 @@
   }
 
   function updateDiscussion() {
-    $("my-conclusion").innerHTML = describeSet(state.runs, "你在虚拟实验台记入的结果") + describeSet(state.book, "原始数据表按当前 g 和管内径重算");
+    if (!state.runs.length) {
+      $("my-conclusion").innerHTML = "<p class='muted'>还没有记入虚拟测量。可以先在实验台采集，或到数据处理页修改原始数据。</p>";
+    } else {
+      $("my-conclusion").innerHTML = describeSet(state.runs, "你在虚拟实验台记入的结果");
+    }
+    $("book-numbers").innerHTML = describeSet(state.book, "原始数据表按当前 g 和管内径重算");
   }
 
   function describeSet(runs, title) {
@@ -1388,11 +1412,26 @@
       const x1 = state.plot.left + (state.cursor1 / state.plot.windowUs) * state.plot.width;
       const x2 = state.plot.left + (state.cursor2 / state.plot.windowUs) * state.plot.width;
       state.drag = Math.abs(x - x1) <= Math.abs(x - x2) ? "c1" : "c2";
+      scope.focus();
       scope.setPointerCapture(e.pointerId);
       moveCursor(e);
     });
     scope.addEventListener("pointermove", (e) => { if (state.drag) moveCursor(e); });
     scope.addEventListener("pointerup", () => { state.drag = null; });
+    document.addEventListener("keydown", (e) => {
+      if (document.activeElement !== scope) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (!state.plot) return;
+      e.preventDefault();
+      const step = (state.usPerDiv / 5) * (e.altKey ? 0.2 : 1);
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      const which = e.shiftKey ? "cursor1" : "cursor2";
+      state[which] = clamp(state[which] + dir * step, 0, state.plot.windowUs);
+      drawScope();
+      const dt = (state.cursor2 - state.cursor1) / 1000;
+      $("dt-readout").textContent = isFinite(dt) ? dt.toFixed(4) : "—";
+      $("single-v").textContent = dt > 0 ? fmt(state.L / dt, 1) : "—";
+    });
     function moveCursor(e) {
       const rect = scope.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -1425,6 +1464,15 @@
       renderEditor();
       drawDataCharts();
       persist();
+    });
+    $("btn-del-run").addEventListener("click", () => {
+      const run = findSelected();
+      if (!run || state.dataTab !== "mine") return;
+      state.runs = state.runs.filter((r) => r.id !== run.id);
+      state.selectedId = null;
+      renderData();
+      persist();
+      toast("已删除这个载荷。");
     });
     $("editor-body").addEventListener("input", (e) => {
       const run = findSelected();
@@ -1489,8 +1537,21 @@
 
     ["h-Pnum", "h-R", "h-Z", "h-phi", "h-E", "h-nu", "h-rho"].forEach((id) => {
       $(id).addEventListener("input", () => {
+        const raw = $(id).value.trim();
+        if (raw === "" || raw === "-" || raw === "." || raw === "-.") return;
+        const n = Number(raw);
+        if (!isFinite(n)) return;
         state.noisy = null;
-        if (id === "h-Pnum") $("h-P").value = Math.log10(clamp(Number($("h-Pnum").value), 0.01, 10)).toFixed(4);
+        if (id === "h-Pnum" && n >= 0.01 && n <= 10) $("h-P").value = Math.log10(n).toFixed(4);
+        updateHertz();
+      });
+      $(id).addEventListener("change", () => {
+        state.noisy = null;
+        if (id === "h-Pnum") {
+          const p = clamp(Number($(id).value), 0.01, 10);
+          $(id).value = String(Number(p.toFixed(3)));
+          $("h-P").value = Math.log10(p).toFixed(4);
+        }
         updateHertz();
       });
     });

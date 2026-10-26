@@ -163,7 +163,7 @@
         <label class="field">相对压强 P / P<sub>0</sub>
           <input id="theory-ratio" type="range" min="0.05" max="25" step="0.05" value="1">
         </label>
-        <p>若高压区满足 1/6 标度，则 v / v<sub>0</sub> = <strong id="theory-scale">1.000</strong>。当前倍数 <span id="theory-mult">1.00</span>。</p>
+        <p>当前相对压强 P/P<sub>0</sub> = <span id="theory-mult">1.00</span>。若满足 1/6 标度，声速比 v/v<sub>0</sub> = <strong id="theory-scale">1.000</strong>。</p>
       </article>
       <article class="card">
         <h3>力链的三个阶段</h3>
@@ -248,7 +248,7 @@
               <span>SDS 1202X · CH1 发射 · CH2 接收</span>
               <span id="scope-meta"></span>
             </div>
-            <canvas id="scope"></canvas>
+            <canvas id="scope" tabindex="0" aria-label="示波器波形，点选后用方向键移动光标"></canvas>
             <div class="scope-tools">
               <label class="field">时基 μs/div
                 <select id="usdiv">
@@ -258,8 +258,9 @@
                   <option value="200">200</option>
                 </select>
               </label>
-              <label class="check"><input id="show-ref" type="checkbox" checked> 显示首波参考线</label>
+              <label class="check"><input id="show-ref" type="checkbox"> 显示首波参考线</label>
             </div>
+            <p class="small muted">参考线是仿真里的首波位置，用来事后核对。点一下示波器后，方向键移动 C2，按住 Shift 移动 C1。</p>
           </div>
           <div class="panel">
             <h3>力链示意</h3>
@@ -332,15 +333,21 @@
               <tbody id="summary-body"></tbody>
             </table>
           </div>
+          <p class="small muted">点选一行，可在右侧查看并修改该载荷的 t 和 L。</p>
           <div id="exponent-box"></div>
         </article>
         <article class="card">
           <h3 id="editor-title">数据点</h3>
+          <div class="editor-scroll">
           <table class="editor-table">
             <thead><tr><th>t / ms</th><th>L / mm</th><th></th></tr></thead>
             <tbody id="editor-body"></tbody>
           </table>
-          <button class="btn" id="btn-add-point" type="button">增加一行</button>
+          </div>
+          <div class="actions">
+            <button class="btn" id="btn-add-point" type="button">增加一行</button>
+            <button class="btn danger" id="btn-del-run" type="button" hidden>删除此载荷</button>
+          </div>
           <p class="small muted">报告正文里 1 mm 与 2 mm 玻璃珠的幂指数栏曾经对调；2 mm 钢珠零载荷的 r 也与附件不一致。本页一律按表中的 t、L 重算。</p>
         </article>
       </div>
@@ -413,6 +420,7 @@
       </article>
       <article class="card">
         <h2>原实验得出的图像</h2>
+        <div id="book-numbers"></div>
         <ol>
           <li>六种颗粒的零载荷声速都低于空气。声波要绕过空隙、穿过接触点，接触刚度也远小于固体内部。</li>
           <li>同种材料里，粒径较大的样品声速更高。细颗粒在同样长度上有更多界面，有效路径更长。</li>
@@ -477,8 +485,8 @@
   </main>
   <footer>速强团队 · 水平加载颗粒声速实验的虚拟仿真。计算与原始数据表在浏览器内完成，不需要安装环境。</footer>
   <div id="toast" class="toast" hidden></div>
-  <script src="js/data.js?v=3" defer></script>
-  <script src="js/physics.js?v=3" defer></script>
-  <script src="js/app.js?v=3" defer></script>
+  <script src="js/data.js?v=4" defer></script>
+  <script src="js/physics.js?v=4" defer></script>
+  <script src="js/app.js?v=4" defer></script>
 </body>
 </html>
