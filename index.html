@@ -6,7 +6,7 @@
   <title>颗粒物质声速虚拟仿真实验</title>
   <meta name="description" content="基于时差法与压力传感器，水平加载测量玻璃珠和钢珠中声速的虚拟仿真实验。">
   <link rel="icon" href="favicon.svg">
-  <link rel="stylesheet" href="css/lab.css?v=5">
+  <link rel="stylesheet" href="css/lab.css?v=8">
 </head>
 <body>
   <header class="top">
@@ -49,9 +49,9 @@
         <div class="formula-card">
           <div>
             <p class="kicker">测量关系</p>
-            <div class="eq">L = v t + b</div>
+            <div class="eq" aria-label="L 等于 v t 加 b"><span>L</span><span class="op">=</span><span>v t</span><span class="op">+</span><span>b</span></div>
             <p class="small muted">多组间距 L 与传播时间 t 作直线拟合，斜率才是声速。截距 b 吸收探头延迟和光标所对的周期差，所以单点 L/t 并不是本实验的声速。</p>
-            <div class="eq">P = 4 M g / (π D²)</div>
+            <div class="eq" aria-label="P 等于 4 M g 除以 π D 的平方"><span>P</span><span class="op">=</span><span class="frac"><span class="num">4 M g</span><span class="den">π D<sup>2</sup></span></span></div>
             <p class="small muted">传感器读的是加载端等效质量 M。默认 g = 9.80 m/s²，玻璃管内径 D = 80 mm。</p>
           </div>
         </div>
@@ -112,7 +112,7 @@
       <div class="grid-3">
         <article class="card"><h3>预实验</h3><p>先测空气，再测零载荷颗粒。空气声速接近温度公式的预期，颗粒声速低于空气，钢珠快于同粒径玻璃珠，装置才进入正式加压测量。</p></article>
         <article class="card"><h3>正式测量</h3><p>每个载荷记录多组距离和时间。声速取 L–t 直线斜率，并给出相关系数 r 和斜率标准差 s<sub>m</sub>。</p></article>
-        <article class="card"><h3>高压拓展</h3><p>按 P → F → δ → k<sub>n</sub> → E<sub>eff</sub> → v 计算。在理想条件下 ln v–ln P 的斜率精确等于 1/6。</p></article>
+        <article class="card"><h3>高压拓展</h3><p>从压强写出接触力、重叠量和有效模量，再得到声速。理想条件下，ln v 对 ln P 的斜率精确等于 1/6。</p></article>
       </div>
     </section>
 
@@ -128,36 +128,63 @@
         </article>
         <article class="card">
           <h3>时差法</h3>
-          <div class="eq">v = ΔL / Δt</div>
+          <div class="eq" aria-label="v 等于 ΔL 除以 Δt"><span>v</span><span class="op">=</span><span class="frac"><span class="num">ΔL</span><span class="den">Δt</span></span></div>
           <p>固定 S1，移动 S2。若存在固定的电路延迟和光标周期差，单次测量会偏。对多组数据做</p>
-          <div class="eq">L = v t + b</div>
-          <p>斜率 v 才是介质声速，截距 b 对应等效延迟 t<sub>0</sub> = −b / v。</p>
+          <div class="eq" aria-label="L 等于 v t 加 b"><span>L</span><span class="op">=</span><span>v t</span><span class="op">+</span><span>b</span></div>
+          <p>斜率 v 才是介质声速。截距 b 对应等效延迟</p>
+          <div class="eq" aria-label="t0 等于负的 b 除以 v"><span>t<sub>0</sub></span><span class="op">=</span><span class="op">−</span><span class="frac"><span class="num">b</span><span class="den">v</span></span></div>
         </article>
       </div>
       <article class="card">
         <h3>直线拟合与斜率标准差</h3>
-        <p>设 x 为时间、y 为距离，x̄、ȳ 为平均值。</p>
-        <div class="eq">r = Σ(x−x̄)(y−ȳ) / √[ Σ(x−x̄)² · Σ(y−ȳ)² ]</div>
-        <div class="eq">s<sub>m</sub> = |m| · √[ (1/r² − 1) / (n − 2) ]</div>
+        <p>设 x 为时间、y 为距离，x&#772;、y&#772; 为平均值。</p>
+        <div class="eq" aria-label="相关系数 r">
+          <span>r</span><span class="op">=</span>
+          <span class="frac">
+            <span class="num">Σ(<span>x</span><span class="op">−</span><span class="mean">x</span>)(<span>y</span><span class="op">−</span><span class="mean">y</span>)</span>
+            <span class="den">
+              <span class="rad"><svg viewBox="0 0 18 32" preserveAspectRatio="none" aria-hidden="true"><path d="M1 20 H6 L10 31 L18 0" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="vin">Σ(<span>x</span><span class="op">−</span><span class="mean">x</span>)<sup>2</sup><span class="op">·</span>Σ(<span>y</span><span class="op">−</span><span class="mean">y</span>)<sup>2</sup></span></span>
+            </span>
+          </span>
+        </div>
+        <div class="eq" aria-label="斜率标准差 s m">
+          <span>s<sub>m</sub></span><span class="op">=</span><span>|m|</span>
+          <span class="rad"><svg viewBox="0 0 18 32" preserveAspectRatio="none" aria-hidden="true"><path d="M1 20 H6 L10 31 L18 0" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="vin">
+            <span class="frac">
+              <span class="num"><span class="frac"><span class="num">1</span><span class="den">r<sup>2</sup></span></span><span class="op">−</span><span>1</span></span>
+              <span class="den">n<span class="op">−</span>2</span>
+            </span>
+          </span></span>
+        </div>
         <p class="small muted">r 要保留足够位数再代入 s<sub>m</sub>，中间步骤过早舍入会把标准差算坏。本站用原始数据直接计算。时间用 ms、距离用 mm 时，斜率的数值就是 m/s。</p>
       </article>
       <article class="card">
         <h3>名义压强</h3>
-        <div class="eq">P = M g / A ， A = π D² / 4</div>
+        <div class="eq" aria-label="P 等于 M g 除以 A"><span>P</span><span class="op">=</span><span class="frac"><span class="num">M g</span><span class="den">A</span></span></div>
+        <div class="eq" aria-label="A 等于 π D 平方除以 4"><span>A</span><span class="op">=</span><span class="frac"><span class="num">π D<sup>2</sup></span><span class="den">4</span></span></div>
         <p>这是加载端的名义压强，不是颗粒内部的真实平均应力。管壁摩擦（仓壁效应）会吃掉一部分推力。默认 4 kg 对应 7798.6 Pa。你可以改 M、g 和 D，压强和后面的幂指数会跟着变，而 L–t 斜率本身不变。</p>
       </article>
       <article class="card">
         <h3>赫兹接触与 1/6 标度</h3>
         <p>把堆积体看成等效连续介质时，纵波声速为</p>
-        <div class="eq">v = √(E<sub>eff</sub> / ρ<sub>eff</sub>) ， ρ<sub>eff</sub> = ρ<sub>s</sub> φ</div>
+        <div class="eq" aria-label="v 等于 E eff 除以 ρ eff 的平方根">
+          <span>v</span><span class="op">=</span>
+          <span class="rad"><svg viewBox="0 0 18 32" preserveAspectRatio="none" aria-hidden="true"><path d="M1 20 H6 L10 31 L18 0" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="vin"><span class="frac"><span class="num">E<sub>eff</sub></span><span class="den">ρ<sub>eff</sub></span></span></span></span>
+        </div>
+        <div class="eq" aria-label="ρ eff 等于 ρ s 乘 φ"><span>ρ<sub>eff</sub></span><span class="op">=</span><span>ρ<sub>s</sub> φ</span></div>
         <p>两个相同弹性球的等效模量、接触力、重叠量、接触刚度和有效模量依次是</p>
-        <div class="eq">E* = E / [2(1−ν²)]</div>
-        <div class="eq">F = 4πR² P / (Z φ)</div>
-        <div class="eq">δ = [ 3F / (4 E* √R) ]<sup>2/3</sup></div>
-        <div class="eq">k<sub>n</sub> = 2 E* √(R δ)</div>
-        <div class="eq">E<sub>eff</sub> = Z φ k<sub>n</sub> / (4π R)</div>
-        <p>联立后 E<sub>eff</sub> ∝ P<sup>1/3</sup>，因此</p>
-        <div class="eq">v ∝ P<sup>1/6</sup></div>
+        <div class="eq" aria-label="E 星等于 E 除以 2 倍 1 减 ν 平方"><span>E*</span><span class="op">=</span><span class="frac"><span class="num">E</span><span class="den">2(1<span class="op">−</span>ν<sup>2</sup>)</span></span></div>
+        <div class="eq" aria-label="F 等于 4 π R 平方 P 除以 Z φ"><span>F</span><span class="op">=</span><span class="frac"><span class="num">4π R<sup>2</sup> P</span><span class="den">Z φ</span></span></div>
+        <div class="eq" aria-label="δ 等于 3 F 除以 4 E 星 根号 R，再取 2/3 次方">
+          <span>δ</span><span class="op">=</span>
+          <span class="pow"><span class="frac"><span class="num">3 F</span><span class="den">4 E* <span class="rad"><svg viewBox="0 0 18 32" preserveAspectRatio="none" aria-hidden="true"><path d="M1 20 H6 L10 31 L18 0" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="vin">R</span></span></span></span><sup><span class="frac"><span class="num">2</span><span class="den">3</span></span></sup></span>
+        </div>
+        <div class="eq" aria-label="k n 等于 2 E 星乘根号 R δ"><span>k<sub>n</sub></span><span class="op">=</span><span>2 E*</span><span class="rad"><svg viewBox="0 0 18 32" preserveAspectRatio="none" aria-hidden="true"><path d="M1 20 H6 L10 31 L18 0" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg><span class="vin">R δ</span></span></div>
+        <div class="eq" aria-label="E eff 等于 Z φ k n 除以 4 π R"><span>E<sub>eff</sub></span><span class="op">=</span><span class="frac"><span class="num">Z φ k<sub>n</sub></span><span class="den">4π R</span></span></div>
+        <p>联立后</p>
+        <div class="eq" aria-label="E eff 正比于 P 的 1/3 次方"><span>E<sub>eff</sub></span><span class="op">∝</span><span>P</span><sup><span class="frac"><span class="num">1</span><span class="den">3</span></span></sup></div>
+        <p>因此</p>
+        <div class="eq" aria-label="v 正比于 P 的 1/6 次方"><span>v</span><span class="op">∝</span><span>P</span><sup><span class="frac"><span class="num">1</span><span class="den">6</span></span></sup></div>
         <p>半径 R 在接触刚度与升尺度中相消，理想赫兹声速不随粒径改变。本实验在低压下看到的“粒径越大、声速越高”，来自接触点数量和散射路径，不在这条理想标度里。</p>
         <p>适用条件：弹性小变形，Z 和 φ 稳定，力链连续，波长远大于粒径。经验上大约 P ≳ 0.4 MPa 才比较接近。更低的压力下，文献里的指数常常靠近 1/4，原因包括表面粗糙、软壳层，以及配位数随加载变化。</p>
         <label class="field">相对压强 P / P<sub>0</sub>
@@ -380,7 +407,7 @@
     <section id="view-hertz" class="view" hidden>
       <article class="card">
         <h2>高压区赫兹仿真</h2>
-        <p>真实螺杆和传感器到不了使等效介质理论严格成立的压力。这里从宏观压强一路算到纵波声速：P → F → δ → k<sub>n</sub> → E<sub>eff</sub> → v。理想曲线的双对数斜率就是 1/6。默认参数对应玻璃珠：半径 0.36 mm，Z = 5.2，φ = 0.61，E = 65 GPa，ν = 0.22，ρ = 2230 kg/m³。0.4 MPa 处的声速由公式直接算出。</p>
+        <p>真实螺杆和传感器到不了使等效介质理论严格成立的压力。这里按原理页的接触公式，从压强算到纵波声速。理想曲线的双对数斜率就是 1/6。默认参数对应玻璃珠：半径 0.36 mm，Z = 5.2，φ = 0.61，E = 65 GPa，ν = 0.22，ρ = 2230 kg/m³。0.4 MPa 处的声速由公式直接算出。</p>
         <div id="h-warning" class="warn" hidden></div>
       </article>
       <div class="grid-2">
@@ -415,7 +442,7 @@
         </article>
         <article class="panel">
           <h3>计算链</h3>
-          <div id="h-steps" class="eq"></div>
+          <div id="h-steps" class="calc"></div>
           <div id="h-k"></div>
         </article>
       </div>

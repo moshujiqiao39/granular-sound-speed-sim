@@ -122,14 +122,99 @@ h3 { font-size: 22px; margin: 0 0 8px; }
 
 .formula-card { padding: 22px; display: flex; flex-direction: column; justify-content: space-between; }
 .eq {
-  font-family: var(--mono);
+  font-family: "Cambria Math", Cambria, "Times New Roman", "SimSun", serif;
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.15;
   background: #101820;
   border-left: 3px solid var(--amber);
-  padding: 10px 12px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow-x: auto;
+  color: #f6ecd8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28em;
+}
+.eq .op {
+  font-style: normal;
+  padding: 0 0.12em;
+}
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  margin: 0 0.08em;
+  vertical-align: middle;
+}
+.frac > .num,
+.frac > .den {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22em;
+  padding: 0.06em 0.5em;
+  white-space: nowrap;
+}
+.frac > .num { border-bottom: 1.6px solid currentColor; padding-bottom: 0.16em; }
+.frac > .den { padding-top: 0.14em; }
+.pow {
+  display: inline-flex;
+  align-items: center;
+}
+.pow > sup {
+  font-size: 0.62em;
+  margin-left: 0.08em;
+}
+.rad {
+  display: inline-grid;
+  grid-template-columns: 0.7em max-content;
+  align-items: stretch;
+  margin: 0 0.08em;
+}
+.rad svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+.rad .vin {
+  border-top: 1.6px solid currentColor;
+  margin-left: -1px;
+  padding: 0.18em 0.45em 0.08em 0.22em;
+  display: flex;
+  align-items: center;
+}
+.mean {
+  display: inline-block;
+  position: relative;
+  padding-top: 0.18em;
+  line-height: 1;
+}
+.mean::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0.02em;
+  border-top: 1.4px solid currentColor;
+}
+.eq sub, .eq sup { font-size: 0.62em; font-style: italic; line-height: 0; }
+.eq sup { position: relative; top: -0.55em; }
+.eq sub { position: relative; top: 0.25em; }
+.calc {
+  font-family: var(--serif);
+  background: #101820;
+  border-left: 3px solid var(--amber);
+  padding: 12px 14px;
   border-radius: 8px;
   margin: 8px 0;
-  overflow-x: auto;
   color: #f3e2c2;
+  line-height: 1.75;
 }
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
