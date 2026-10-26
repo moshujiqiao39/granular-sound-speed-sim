@@ -228,7 +228,7 @@
               <input id="noise" type="range" min="0" max="3" step="0.1" value="1">
             </label>
           </details>
-          <details open>
+          <details>
             <summary>信号发生器 AFG-2225</summary>
             <label class="field">频率 / kHz<input id="freq" class="num" type="number" min="20" max="60" step="0.1" value="36"></label>
             <label class="field">幅度 / Vpp<input id="vpp" class="num" type="number" min="1" max="20" step="0.5" value="20"></label>
@@ -249,7 +249,7 @@
               <span id="scope-meta"></span>
             </div>
             <canvas id="scope"></canvas>
-            <div class="row-2" style="margin-top:8px">
+            <div class="scope-tools">
               <label class="field">时基 μs/div
                 <select id="usdiv">
                   <option value="20">20</option>
@@ -263,7 +263,7 @@
           </div>
           <div class="panel">
             <h3>力链示意</h3>
-            <canvas id="chains" style="height:168px"></canvas>
+            <canvas id="chains"></canvas>
             <p id="chain-caption" class="small chain-note"></p>
           </div>
         </div>
@@ -288,10 +288,12 @@
             <p class="small" id="truth-box"></p>
           </details>
           <div id="live-fit"></div>
+          <div class="point-scroll">
           <table>
             <thead><tr><th>#</th><th>t / ms</th><th>L / mm</th><th></th></tr></thead>
             <tbody id="point-body"></tbody>
           </table>
+          </div>
           <div class="actions">
             <button class="btn primary" id="btn-save" type="button">完成本载荷，记入结果</button>
           </div>
@@ -303,7 +305,7 @@
     <section id="view-data" class="view" hidden>
       <article class="card">
         <h2>数据处理</h2>
-        <p>左边用虚拟实验台测得的数据，右边是研究报告和答辩附件里的原始 (t, L)。两边都可以改数字：改时间或距离会重算声速、r 和 s<sub>m</sub>；改 g 或管内径会重算名义压强和 ln v–ln P 的幂指数，但不会改变已经测得的声速。</p>
+        <p>「本次虚拟测量」是你在实验台记下的结果，「原实验数据」来自研究报告和答辩附件里的原始 (t, L)。两边都可以改数字：改时间或距离会重算声速、r 和 s<sub>m</sub>；改 g 或管内径会重算名义压强和 ln v–ln P 的幂指数，但不会改变已经测得的声速。</p>
         <div class="pills">
           <button type="button" id="tab-mine">本次虚拟测量</button>
           <button type="button" id="tab-book" class="active">原实验数据</button>
@@ -475,8 +477,8 @@
   </main>
   <footer>速强团队 · 水平加载颗粒声速实验的虚拟仿真。计算与原始数据表在浏览器内完成，不需要安装环境。</footer>
   <div id="toast" class="toast" hidden></div>
-  <script src="js/data.js" defer></script>
-  <script src="js/physics.js" defer></script>
-  <script src="js/app.js" defer></script>
+  <script src="js/data.js?v=3" defer></script>
+  <script src="js/physics.js?v=3" defer></script>
+  <script src="js/app.js?v=3" defer></script>
 </body>
 </html>

@@ -176,7 +176,8 @@ summary { cursor: pointer; color: var(--amber); }
 canvas { width: 100%; display: block; }
 #apparatus { height: 232px; }
 #scope { height: 292px; background: #07140f; border-radius: 8px; touch-action: none; }
-#chains, .chart { height: 250px; background: #101820; border-radius: 10px; }
+#chains { height: 180px; background: #101820; border-radius: 10px; }
+.chart { height: 280px; background: #101820; border-radius: 10px; }
 .lcd {
   font-family: var(--mono);
   color: var(--green);
@@ -227,7 +228,18 @@ footer { color: var(--muted); font-size: 12px; padding: 8px 4px 20px; }
 .refs { padding-left: 18px; }
 .refs li { margin: 4px 0; }
 .split-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.chain-note { min-height: 3.2em; }
+.scope-tools { display: flex; gap: 14px; align-items: flex-end; margin-top: 8px; }
+.scope-tools .field { flex: 1; margin: 0; }
+.scope-tools .check { margin: 0 0 8px; }
+button.del {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  line-height: 1;
+  color: #ffb4a8;
+  border-color: rgba(255, 144, 124, 0.45);
+}
+.point-scroll { max-height: 220px; overflow: auto; margin: 8px 0; }
 
 @media (max-width: 1020px) {
   .hero, .bench-grid, .grid-2, .grid-3, .split-charts, .stats { grid-template-columns: 1fr; }

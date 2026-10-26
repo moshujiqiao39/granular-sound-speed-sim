@@ -42,6 +42,7 @@
     backlashActive: false,
     noise: 1,
     usPerDiv: 50,
+    timebaseManual: false,
     showRef: true,
     cursor1: 7,
     cursor2: 200,
@@ -67,6 +68,26 @@
   function clamp(n, a, b) {
     if (!isFinite(n)) return a;
     return Math.min(b, Math.max(a, n));
+  }
+
+  function bindNumber(id, key, min, max, integer) {
+    const el = $(id);
+    el.addEventListener("input", () => {
+      const raw = el.value.trim();
+      if (raw === "" || raw === "-" || raw === "." || raw === "-.") return;
+      const n = Number(raw);
+      if (!isFinite(n) || n < min || n > max) return;
+      state[key] = integer ? Math.round(n) : n;
+      drawBench();
+      persist();
+    });
+    el.addEventListener("change", () => {
+      const n = clamp(Number(el.value), min, max);
+      state[key] = integer ? Math.round(n) : n;
+      el.value = integer ? String(state[key]) : String(state[key]);
+      drawBench();
+      persist();
+    });
   }
 
   function uid() {
@@ -246,6 +267,7 @@
       else btn.removeAttribute("aria-current");
     });
     if (location.hash !== "#" + view) history.replaceState(null, "", "#" + view);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     requestAnimationFrame(redraw);
   }
 
@@ -254,6 +276,11 @@
     if (state.view === "data") renderData();
     if (state.view === "hertz") updateHertz();
     if (state.view === "discuss") updateDiscussion();
+    const probe = state.view === "hertz" ? $("chart-hertz") : state.view === "data" ? $("chart-lt") : null;
+    if (probe && probe.clientWidth < 8 && !redraw.pending) {
+      redraw.pending = true;
+      requestAnimationFrame(() => { redraw.pending = false; redraw(); });
+    }
   }
 
   function syncNumbers() {
@@ -303,12 +330,7 @@
     const dt = (state.cursor2 - state.cursor1) / 1000;
     $("dt-readout").textContent = isFinite(dt) ? dt.toFixed(4) : "—";
     $("single-v").textContent = dt > 0 ? fmt(state.L / dt, 1) : "—";
-    const needUs = flightMsAt(state.L) * 1000 + state.pulses * 1e6 / freqHz() + 80;
-    if (state.usPerDiv * 10 < needUs) {
-      const choices = [20, 50, 100, 200];
-      state.usPerDiv = choices.find((c) => c * 10 >= needUs) || 200;
-      $("usdiv").value = String(state.usPerDiv);
-    }
+    fitTimebase();
     $("scope-meta").textContent = state.usPerDiv + " μs/div";
     $("warn-backlash").hidden = !(state.backlash && state.backlashActive);
     const q = signalQuality(state.L);
@@ -317,11 +339,11 @@
       warn.hidden = false;
       warn.textContent = "接收信号偏弱，寻峰会有更大的时间抖动。可以把频率调回 36 kHz、加大幅度、涂耦合剂，或缩短间距、提高载荷。";
     } else warn.hidden = true;
-    const v = trueVelocity();
     const n = particleEstimate();
     $("particle-count").textContent = state.sampleId === "air"
       ? "空管 · 空气"
-      : "约 " + n.toLocaleString("zh-CN") + " 颗 · 仿真真值 " + fmt(v, 1) + " m/s";
+      : "约 " + n.toLocaleString("zh-CN") + " 颗";
+    const v = trueVelocity();
     $("truth-box").innerHTML = "仿真真值 v = <b>" + fmt(v, 2) + "</b> m/s。<br>刻度间距 " + fmt(state.L, 2) + " mm，声波实际经过 " + fmt(acousticLength(state.L), 2) + " mm。<br>对应波峰的时间差应为 " + fmt(flightMsAt(state.L), 4) + " ms（含 " + DELAY_MS.toFixed(2) + " ms 固定延迟）。<br>内部压力按 ηP = " + fmt(P * state.eta, 1) + " Pa 计算。";
     renderLiveFit();
     renderPoints();
@@ -329,6 +351,17 @@
     drawApparatus();
     drawScope();
     drawChains();
+  }
+
+  function fitTimebase() {
+    const needUs = flightMsAt(state.L) * 1000 + state.pulses * 1e6 / freqHz() + 80;
+    const choices = [20, 50, 100, 200];
+    const fit = choices.find((c) => c * 10 >= needUs) || 200;
+    const tooSmall = state.usPerDiv * 10 < needUs;
+    if (!tooSmall && state.timebaseManual) return;
+    if (fit === state.usPerDiv) return;
+    state.usPerDiv = fit;
+    $("usdiv").value = String(fit);
   }
 
   function particleEstimate() {
@@ -361,7 +394,7 @@
     const body = $("point-body");
     if (!force && document.activeElement && document.activeElement.tagName === "INPUT" && body.contains(document.activeElement)) return;
     body.innerHTML = state.points.map((p, i) =>
-      "<tr data-i='" + i + "'><td>" + (i + 1) + "</td><td><input class='num t' type='number' step='0.0001' value='" + p.tMs + "'></td><td><input class='num L' type='number' step='0.001' value='" + p.Lmm + "'></td><td><button type='button' data-del='" + i + "'>×</button></td></tr>"
+      "<tr data-i='" + i + "'><td>" + (i + 1) + "</td><td><input class='num t' type='number' step='0.0001' value='" + Number(p.tMs).toFixed(4) + "'></td><td><input class='num L' type='number' step='0.001' value='" + Number(p.Lmm).toFixed(3) + "'></td><td><button type='button' class='del' data-del='" + i + "' aria-label='删除第 " + (i + 1) + " 行'>×</button></td></tr>"
     ).join("");
   }
 
@@ -575,11 +608,11 @@
     const yOf = (center, volts) => center - (volts / vPerDiv) * (plotH / 8);
     strokeWave(ctx, left, plotW, windowUs, y1, yOf, ch1, "#ffe08a");
     strokeWave(ctx, left, plotW, windowUs, y2, yOf, ch2, "#8dffb0");
-    cursorLine(ctx, left, plotW, top, plotH, windowUs, state.cursor1, "#ffb4a8", "C1");
-    cursorLine(ctx, left, plotW, top, plotH, windowUs, state.cursor2, "#9fd7ff", "C2");
+    cursorLine(ctx, left, plotW, top, plotH, windowUs, state.cursor1, "#ffb4a8", "C1", 12);
+    cursorLine(ctx, left, plotW, top, plotH, windowUs, state.cursor2, "#9fd7ff", "C2", 12);
     if (state.showRef) {
       const ref = (1e6 / freqHz()) * 0.25 + flightMsAt(state.L) * 1000;
-      cursorLine(ctx, left, plotW, top, plotH, windowUs, ref, "rgba(255,255,255,0.45)", "参考");
+      cursorLine(ctx, left, plotW, top, plotH, windowUs, ref, "rgba(255,255,255,0.7)", "参考", 46);
     }
     ctx.fillStyle = "#ffe08a";
     ctx.font = "12px Consolas, monospace";
@@ -601,7 +634,7 @@
     ctx.stroke();
   }
 
-  function cursorLine(ctx, left, plotW, top, plotH, windowUs, tUs, color, label) {
+  function cursorLine(ctx, left, plotW, top, plotH, windowUs, tUs, color, label, labelY) {
     const x = left + (tUs / windowUs) * plotW;
     ctx.strokeStyle = color;
     ctx.setLineDash([4, 3]);
@@ -612,7 +645,10 @@
     ctx.setLineDash([]);
     ctx.fillStyle = color;
     ctx.font = "11px Consolas, monospace";
-    ctx.fillText(label, x + 3, top + 12);
+    const tw = ctx.measureText(label).width;
+    let lx = x + 4;
+    if (lx + tw > left + plotW - 2) lx = x - tw - 4;
+    ctx.fillText(label, lx, top + (labelY || 12));
   }
 
   function drawChains() {
@@ -794,7 +830,7 @@
     }
     if (!force && document.activeElement && document.activeElement.tagName === "INPUT" && body.contains(document.activeElement)) return;
     body.innerHTML = run.points.map((p, i) =>
-      "<tr data-i='" + i + "'><td><input class='num t' type='number' step='0.0001' value='" + p[0] + "'></td><td><input class='num L' type='number' step='0.001' value='" + p[1] + "'></td><td><button type='button' data-del='" + i + "'>×</button></td></tr>"
+      "<tr data-i='" + i + "'><td><input class='num t' type='number' step='0.0001' value='" + Number(p[0]).toFixed(4) + "'></td><td><input class='num L' type='number' step='0.001' value='" + Number(p[1]).toFixed(3) + "'></td><td><button type='button' class='del' data-del='" + i + "' aria-label='删除第 " + (i + 1) + " 行'>×</button></td></tr>"
     ).join("");
   }
 
@@ -827,7 +863,7 @@
     }
     drawChart($("chart-lt"), { xLabel: "t / ms", yLabel: "L / mm", series: lt });
 
-    const sampleRuns = selected ? dataset().filter((r) => r.sampleId === selected.sampleId && (selected.sampleId !== "custom" || Math.abs(r.diameterMm - selected.diameterMm) < 0.051)).map(annotate).filter((r) => r.fit.ok) : [];
+    const sampleRuns = selected ? dataset().filter((r) => r.sampleId === selected.sampleId && (selected.sampleId !== "custom" || Math.abs(r.diameterMm - selected.diameterMm) < 0.051)).map(annotate).filter((r) => r.fit.ok).sort((a, b) => a.P - b.P) : [];
     const vp = [{ name: selected ? selected.name : "", color: selected ? (sampleById(selected.sampleId).color) : "#fff", marker: true, width: 2, points: sampleRuns.map((r) => [r.P / 1000, r.fit.slope]) }];
     const air = dataset().map(annotate).find((r) => r.sampleId === "air" && r.fit.ok);
     if (air && sampleRuns.length && selected.sampleId !== "air") {
@@ -879,6 +915,26 @@
     return f * p;
   }
 
+  function legendLines(ctx, series, maxW) {
+    ctx.font = "12px Segoe UI, Microsoft YaHei, sans-serif";
+    const items = (series || []).filter((s) => s.name);
+    const lines = [];
+    let line = [];
+    let used = 0;
+    items.forEach((s) => {
+      const w = 22 + ctx.measureText(s.name).width + 12;
+      if (line.length && used + w > maxW) {
+        lines.push(line);
+        line = [];
+        used = 0;
+      }
+      line.push({ s, w });
+      used += w;
+    });
+    if (line.length) lines.push(line);
+    return lines;
+  }
+
   function drawChart(canvas, spec) {
     const view = setupCanvas(canvas);
     if (!view) return;
@@ -886,7 +942,8 @@
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#101820";
     ctx.fillRect(0, 0, w, h);
-    const pad = { l: 52, r: 12, t: 16, b: 34 };
+    const lines = legendLines(ctx, spec.series, w - 28);
+    const pad = { l: 68, r: 14, t: 10 + lines.length * 18, b: 36 };
     const pw = w - pad.l - pad.r;
     const ph = h - pad.t - pad.b;
     const pts = [];
@@ -894,7 +951,7 @@
     if (!pts.length) {
       ctx.fillStyle = "#95a6b8";
       ctx.font = "13px Segoe UI, Microsoft YaHei, sans-serif";
-      ctx.fillText("暂无数据", pad.l, pad.t + 24);
+      ctx.fillText("暂无数据", 24, 36);
       return;
     }
     let xMin = spec.xMin !== undefined ? spec.xMin : Math.min.apply(null, pts.map((p) => p[0]));
@@ -913,31 +970,81 @@
     const yOf = (y) => pad.t + (yMax - y) / (yMax - yMin) * ph;
     ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.strokeRect(pad.l, pad.t, pw, ph);
-    ctx.fillStyle = "#95a6b8";
     ctx.font = "11px Consolas, monospace";
     const xTicks = spec.logX ? logTicks(xMin, xMax) : linearTicks(xMin, xMax);
+    let lastLabelRight = -999;
     xTicks.forEach((tv) => {
       const x = xOf(tv);
       ctx.strokeStyle = "rgba(255,255,255,0.05)";
       ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ph); ctx.stroke();
+      const label = tickText(tv);
+      const tw = ctx.measureText(label).width;
+      const lx = Math.max(2, Math.min(w - tw - 2, x - tw / 2));
+      if (lx < lastLabelRight + 6) return;
       ctx.fillStyle = "#95a6b8";
-      ctx.fillText(tickText(tv), x - 10, h - 16);
+      ctx.fillText(label, lx, h - 18);
+      lastLabelRight = lx + tw;
     });
     linearTicks(yMin, yMax).forEach((tv) => {
       const y = yOf(tv);
+      if (y < pad.t - 2 || y > pad.t + ph + 2) return;
       ctx.strokeStyle = "rgba(255,255,255,0.05)";
       ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + pw, y); ctx.stroke();
+      const label = tickText(tv);
+      const tw = ctx.measureText(label).width;
       ctx.fillStyle = "#95a6b8";
-      ctx.fillText(tickText(tv), 4, y + 3);
+      ctx.fillText(label, pad.l - tw - 6, y + 3);
     });
+    if (spec.yLabel) {
+      ctx.save();
+      ctx.translate(13, pad.t + ph / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = "#c9d6e2";
+      ctx.font = "12px Segoe UI, Microsoft YaHei, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(spec.yLabel, 0, 0);
+      ctx.restore();
+    }
     ctx.fillStyle = "#c9d6e2";
+    ctx.font = "12px Segoe UI, Microsoft YaHei, sans-serif";
+    ctx.textAlign = "left";
     ctx.fillText(spec.xLabel || "", pad.l, h - 4);
+    lines.forEach((line, li) => {
+      let x = pad.l;
+      const y = 12 + li * 18;
+      line.forEach((item) => {
+        ctx.strokeStyle = item.s.color;
+        ctx.fillStyle = item.s.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(item.s.dash || []);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 14, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (item.s.marker) {
+          ctx.beginPath();
+          ctx.arc(x + 7, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#c9d6e2";
+        ctx.font = "12px Segoe UI, Microsoft YaHei, sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(item.s.name, x + 18, y + 4);
+        x += item.w;
+      });
+    });
     (spec.vLines || []).forEach((line) => {
       const x = xOf(line.x);
       ctx.strokeStyle = line.color || "rgba(255,144,124,0.8)";
       ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ph); ctx.stroke();
       ctx.setLineDash([]);
+      if (line.label) {
+        ctx.fillStyle = line.color || "#ff907c";
+        ctx.font = "11px Segoe UI, Microsoft YaHei, sans-serif";
+        ctx.fillText(line.label, Math.min(x + 4, pad.l + pw - 56), pad.t + ph - 6);
+      }
     });
     (spec.series || []).forEach((s) => {
       const points = (s.points || []).filter((p) => isFinite(p[0]) && isFinite(p[1]) && (!spec.logX || p[0] > 0));
@@ -1015,9 +1122,9 @@
     const refP = 0.4e6;
     const ref = Phys.hertz(Object.assign({ P: refP }, params));
     const warn = $("h-warning");
-    if (P < refP) {
+    if (P <= refP) {
       warn.hidden = false;
-      warn.textContent = "当前压强低于 0.4 MPa。真实颗粒在这个区间通常低于理想赫兹曲线，幂指数也常常偏离 1/6，有的实验更接近 1/4。本项目实测都在 20 kPa 以下。";
+      warn.textContent = "当前压强不高于 0.4 MPa。真实颗粒在这个区间通常低于理想赫兹曲线，幂指数也常常偏离 1/6，有的实验更接近 1/4。本项目实测都在 20 kPa 以下。";
     } else warn.hidden = true;
     if (!now.ok || !ref.ok) {
       $("h-steps").textContent = now.message || ref.message;
@@ -1085,7 +1192,7 @@
       xMax: 10000,
       yMin: 0,
       series,
-      vLines: [{ x: 400, color: "rgba(255,144,124,0.9)" }]
+      vLines: [{ x: 400, color: "rgba(255,144,124,0.9)", label: "0.4 MPa" }]
     });
 
     const logSeries = [{
@@ -1222,10 +1329,10 @@
     $("Z").addEventListener("input", () => { state.Z = clamp(Number($("Z").value), 4, 8); drawBench(); persist(); });
     $("phi").addEventListener("input", () => { state.phi = clamp(Number($("phi").value), 0.45, 0.74); drawBench(); persist(); });
     $("eta").addEventListener("input", () => { state.eta = clamp(Number($("eta").value), 0.5, 1); drawBench(); persist(); });
-    $("freq").addEventListener("input", () => { state.freqKHz = clamp(Number($("freq").value), 20, 60); drawBench(); persist(); });
-    $("vpp").addEventListener("input", () => { state.vpp = clamp(Number($("vpp").value), 1, 20); drawBench(); persist(); });
-    $("pulses").addEventListener("input", () => { state.pulses = clamp(Math.round(Number($("pulses").value)), 1, 12); drawBench(); persist(); });
-    $("period").addEventListener("input", () => { state.periodMs = clamp(Number($("period").value), 1, 200); drawBench(); persist(); });
+    bindNumber("freq", "freqKHz", 20, 60, false);
+    bindNumber("vpp", "vpp", 1, 20, false);
+    bindNumber("pulses", "pulses", 1, 12, true);
+    bindNumber("period", "periodMs", 1, 200, false);
     $("noise").addEventListener("input", () => { state.noise = clamp(Number($("noise").value), 0, 3); drawBench(); persist(); });
     $("coupling").addEventListener("change", () => { state.coupling = $("coupling").checked; drawBench(); persist(); });
     $("backlash").addEventListener("change", () => {
@@ -1234,7 +1341,12 @@
       drawBench();
       persist();
     });
-    $("usdiv").addEventListener("change", () => { state.usPerDiv = Number($("usdiv").value); drawScope(); });
+    $("usdiv").addEventListener("change", () => {
+      state.timebaseManual = true;
+      state.usPerDiv = Number($("usdiv").value);
+      drawScope();
+      $("scope-meta").textContent = state.usPerDiv + " μs/div";
+    });
     $("show-ref").addEventListener("change", () => { state.showRef = $("show-ref").checked; drawScope(); });
     $("btn-peak").addEventListener("click", () => {
       const period = 1e6 / freqHz();
@@ -1255,6 +1367,11 @@
       if (isFinite(t) && isFinite(L)) state.points[i] = { tMs: t, Lmm: L };
       renderLiveFit();
       persist();
+    });
+    $("point-body").addEventListener("focusout", () => {
+      setTimeout(() => {
+        if (!$("point-body").contains(document.activeElement)) renderPoints(true);
+      }, 0);
     });
     $("point-body").addEventListener("click", (e) => {
       if (e.target.dataset.del === undefined) return;
@@ -1322,6 +1439,11 @@
       drawDataCharts();
       if (state.view === "discuss") updateDiscussion();
       persist();
+    });
+    $("editor-body").addEventListener("focusout", () => {
+      setTimeout(() => {
+        if (!$("editor-body").contains(document.activeElement)) renderEditor(true);
+      }, 0);
     });
     $("editor-body").addEventListener("click", (e) => {
       if (e.target.dataset.del === undefined) return;
