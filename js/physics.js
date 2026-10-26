@@ -1,4 +1,4 @@
-/* 时差法拟合、名义压强换算、赫兹接触声速。与报告附录中的计算顺序一致。 */
+/* 时差法拟合、名义压强换算、赫兹接触声速。 */
 (function (global) {
   function linearRegression(points) {
     const n = points.length;
@@ -132,7 +132,7 @@
     return last.v;
   }
 
-  /** 用原实验拟合声速建立 v(P)。压强按 g=9.8、管内径 80 mm 换算，与报告表一致。 */
+  /** 用已测声速建立 v(P)。压强按 g=9.8、管内径 80 mm 换算。 */
   function createEmpiricalModel(runs) {
     const curves = { glass: {}, steel: {} };
     runs.forEach((run) => {

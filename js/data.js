@@ -1,4 +1,4 @@
-/* 原始 (t/ms, L/mm) 来自修订版研究报告与答辩 PPT 附件。拟合结果由页面实时重算。 */
+/* 原始 (t/ms, L/mm)。拟合结果由页面实时重算。 */
 (function (global) {
   const SAMPLES = [
     { id: "air", name: "空气（空管对照）", material: "air", diameterMm: null, color: "#d5dde6", bead: null },
@@ -16,7 +16,7 @@
     steel: { name: "钢（典型值）", E: 200e9, nu: 0.29, rho: 7800 }
   };
 
-  /** 报告换算名义压强时使用的常数 */
+  /** 名义压强换算使用的常数 */
   const LAB = {
     g: 9.8,
     tubeMm: 80,

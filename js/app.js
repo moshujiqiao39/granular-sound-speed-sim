@@ -337,7 +337,7 @@
     if (state.sampleId === "air") {
       $("tube-status").textContent = state.hopper === "air"
         ? "管内现在是空的，可以直接测空气。"
-        : "管内现在是空的。下拉框里的" + ready.name + "还没装进去。";
+        : "管内现在是空的。下拉框里的" + ready.name + " 还没装进去。";
     } else if (state.hopper === state.sampleId) {
       $("tube-status").textContent = "管内是" + inside.name + "。再点一次装入，会按新的堆积重测。";
     } else {
@@ -361,6 +361,7 @@
     fitTimebase();
     $("scope-meta").textContent = state.usPerDiv + " μs/div";
     $("warn-backlash").hidden = !(state.backlash && state.backlashActive);
+    $("warn-cursor").hidden = !cursorsStale();
     const q = signalQuality(state.L);
     const warn = $("warn-snr");
     if (q.snr < 0.22) {
@@ -416,7 +417,13 @@
       return;
     }
     const klass = Math.abs(fit.r) >= 0.999 ? "fit-good" : Math.abs(fit.r) >= 0.99 ? "fit-mid" : "fit-bad";
-    el.innerHTML = "<p>n = " + fit.n + "<br>斜率声速 <b class='" + klass + "'>" + fmt(fit.slope, 2) + " m/s</b><br>r = " + fmt(fit.r, 9) + "<br>s<sub>m</sub> = " + (fit.sm === null ? "至少 3 点" : fmt(fit.sm, 2) + " m/s") + "<br>截距 b = " + fmt(fit.intercept, 2) + " mm<br>等效延迟 t<sub>0</sub> = " + fmt(fit.t0, 4) + " ms</p>";
+    let airNote = "";
+    if (state.sampleId === "air" && fit.n >= 2) {
+      const expect = Phys.airSpeed(state.T);
+      const dv = fit.slope - expect;
+      airNote = "<br><span class='small'>温度公式 " + fmt(expect, 1) + " m/s，相差 " + (dv >= 0 ? "+" : "") + fmt(dv, 1) + " m/s。" + (Math.abs(dv) <= 8 ? "空管和温度公式相符，可以装颗粒。" : "和温度公式差得比较多，先核对温度和光标。") + "</span>";
+    }
+    el.innerHTML = "<p>n = " + fit.n + "<br>斜率声速 <b class='" + klass + "'>" + fmt(fit.slope, 2) + " m/s</b><br>r = " + fmt(fit.r, 9) + "<br>s<sub>m</sub> = " + (fit.sm === null ? "至少 3 点" : fmt(fit.sm, 2) + " m/s") + "<br>截距 b = " + fmt(fit.intercept, 2) + " mm<br>等效延迟 t<sub>0</sub> = " + fmt(fit.t0, 4) + " ms" + airNote + "</p>";
   }
 
   function renderPoints(force) {
@@ -429,14 +436,23 @@
 
   function renderChecklist() {
     const runs = state.runs.map(annotate).filter((r) => r.fit.ok);
-    const air = runs.some((r) => r.sampleId === "air" && r.fit.n >= 4);
+    const airRun = runs.filter((r) => r.sampleId === "air" && r.fit.n >= 4).pop();
+    let air = false;
+    let airText = "空气对照：至少 4 个间距，并接近温度公式";
+    if (airRun) {
+      const expect = Phys.airSpeed(airRun.tempC != null ? airRun.tempC : state.T);
+      const dv = airRun.fit.slope - expect;
+      const close = Math.abs(dv) <= Math.max(8, (airRun.fit.sm || 2) * 3);
+      air = close;
+      airText = "空气 " + fmt(airRun.fit.slope, 1) + " m/s，温度公式 " + fmt(expect, 1) + " m/s" + (close ? "，可以装颗粒" : "，相差偏大，先核对温度和光标");
+    }
     const zero = runs.some((r) => r.sampleId !== "air" && r.massKg === 0 && r.fit.n >= 4);
     const counts = {};
     runs.forEach((r) => {
       if (r.sampleId !== "air" && r.massKg > 0) counts[r.sampleId] = (counts[r.sampleId] || 0) + 1;
     });
     const enough = Object.keys(counts).some((k) => counts[k] >= 6);
-    const items = [[air, "空气声速已记入，且不少于 4 个间距"], [zero, "至少一种颗粒的零载荷已记入"], [enough, "同一样品有不少于 6 个正载荷，可估幂指数"]];
+    const items = [[air, airText], [zero, "至少一种颗粒的零载荷已记入"], [enough, "同一样品有不少于 6 个正载荷，可估幂指数"]];
     $("checklist").innerHTML = "<h4>进度</h4>" + items.map(([ok, text]) => "<div class='small'>" + (ok ? "● " : "○ ") + text + "</div>").join("");
   }
 
@@ -730,16 +746,73 @@
       }
     }
     const contacts = [];
-    for (let i = 0; i < disks.length; i++) {
-      for (let j = i + 1; j < disks.length; j++) {
-        const dx = disks[j].x - disks[i].x;
-        const dy = disks[j].y - disks[i].y;
-        const dist = Math.hypot(dx, dy);
-        if (dist > diskR * 2.35) continue;
-        const align = Math.abs(dx) / dist;
-        const score = align * 0.72 + hash01(i * 17 + j * 5) * 0.28;
-        const need = 0.9 - level * 0.5;
-        if (level > 0.05 && score > need) contacts.push({ i, j, align, score });
+    if (level > 0.05 && disks.length) {
+      const neigh = disks.map(() => []);
+      for (let i = 0; i < disks.length; i++) {
+        for (let j = i + 1; j < disks.length; j++) {
+          const dist = Math.hypot(disks[j].x - disks[i].x, disks[j].y - disks[i].y);
+          if (dist <= diskR * 2.35) {
+            neigh[i].push(j);
+            neigh[j].push(i);
+          }
+        }
+      }
+      const nChain = level < 0.32 ? 1 : level < 0.75 ? 3 : 5;
+      const bands = nChain === 1 ? [0] : [-0.5, -0.24, 0, 0.24, 0.5].slice(0, nChain);
+      const seeds = [];
+      bands.forEach((band) => {
+        const targetY = py + band * radius;
+        let best = -1;
+        let bestD = 1e9;
+        disks.forEach((d, i) => {
+          if (d.x < cx + radius * 0.25) return;
+          const dist = Math.hypot(d.x - (cx + radius * 0.55), d.y - targetY);
+          if (dist < bestD) { bestD = dist; best = i; }
+        });
+        if (best >= 0 && seeds.indexOf(best) < 0) seeds.push(best);
+      });
+      const used = {};
+      seeds.forEach((seed) => {
+        let cur = seed;
+        const seen = {};
+        for (let step = 0; step < 16; step++) {
+          seen[cur] = true;
+          let best = -1;
+          let bestScore = -1;
+          neigh[cur].forEach((j) => {
+            if (seen[j]) return;
+            const dx = disks[cur].x - disks[j].x;
+            const dy = disks[j].y - disks[cur].y;
+            if (dx < diskR * 0.25) return;
+            const dist = Math.hypot(dx, dy);
+            const wander = Math.abs(disks[j].y - disks[seed].y) / radius;
+            let score = dx / dist - wander * 0.2;
+            if (level > 0.7) score += (hash01(cur * 13 + j) - 0.5) * 0.35;
+            if (score > bestScore) { bestScore = score; best = j; }
+          });
+          if (best < 0 || bestScore < 0.15) break;
+          const key = Math.min(cur, best) + ":" + Math.max(cur, best);
+          if (!used[key]) {
+            used[key] = true;
+            contacts.push({ i: cur, j: best, align: 0.85, score: 0.8 });
+          }
+          cur = best;
+        }
+      });
+      if (level > 0.8) {
+        const hot = {};
+        contacts.forEach((c) => { hot[c.i] = true; hot[c.j] = true; });
+        Object.keys(hot).forEach((ia) => {
+          const i = Number(ia);
+          neigh[i].forEach((j) => {
+            if (!hot[j] || j <= i) return;
+            if (Math.abs(disks[j].y - disks[i].y) < Math.abs(disks[j].x - disks[i].x)) return;
+            const key = i + ":" + j;
+            if (used[key] || hash01(i * 19 + j) > 0.45) return;
+            used[key] = true;
+            contacts.push({ i: i, j: j, align: 0.35, score: 0.55 });
+          });
+        });
       }
     }
     const hot = {};
@@ -756,22 +829,30 @@
     contacts.forEach((c) => {
       const a = disks[c.i];
       const b = disks[c.j];
-      ctx.strokeStyle = "rgba(255, 252, 230, " + Math.min(0.95, 0.45 + c.score * 0.5).toFixed(3) + ")";
-      ctx.lineWidth = 1.2 + c.align * 2.2;
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = "rgba(255, 236, 170, 0.55)";
+      ctx.lineWidth = 7 + c.align * 4;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 252, 235, 0.95)";
+      ctx.lineWidth = 2.4 + c.align * 2.4;
       ctx.stroke();
     });
+    ctx.restore();
     if (state.sampleId !== "air") {
-      ctx.fillStyle = "#6d624c";
+      ctx.fillStyle = "#5c5344";
       ctx.beginPath();
       ctx.arc(px, py, pistonR, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#3a3428";
-      ctx.fillRect(px, py - 1.5, radius, 3);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#3a3428";
+      ctx.beginPath();
+      ctx.moveTo(px + pistonR * 0.2, py);
+      ctx.lineTo(Math.min(w - 8, cx + radius + 18), py);
+      ctx.stroke();
     }
-    ctx.restore();
 
     let stage = "空管里没有颗粒，力链无从形成。";
     if (state.sampleId !== "air") {
@@ -788,12 +869,28 @@
     const period = 1e6 / freqHz();
     state.cursor1 = period * 0.25;
     state.cursor2 = state.cursor1 + flightMsAt(state.L) * 1000;
+    markCursors();
+  }
+
+  function markCursors() {
+    state.flightMark = flightMsAt(state.L);
+    const warn = $("warn-cursor");
+    if (warn) warn.hidden = true;
+  }
+
+  function cursorsStale() {
+    if (state.flightMark == null || !isFinite(state.flightMark)) return false;
+    return Math.abs(flightMsAt(state.L) - state.flightMark) > 0.006;
   }
 
   function recordPoint() {
     const dt = (state.cursor2 - state.cursor1) / 1000;
     if (!(dt > 0)) {
       toast("时间差要大于 0。请把 C2 放到 C1 右侧。");
+      return;
+    }
+    if (cursorsStale()) {
+      toast("条件已经变了，光标还停在原来的位置。请先寻峰或移动 C2。");
       return;
     }
     if (state.points.some((p) => Math.abs(p.Lmm - state.L) < 0.2)) {
@@ -819,6 +916,7 @@
     const last = state.points[state.points.length - 1];
     state.cursor1 = period * 0.25;
     state.cursor2 = state.cursor1 + last.tMs * 1000;
+    markCursors();
     state.draftKey = keyNow();
     toast("已用 6 个间距替换本载荷尚未保存的记录。噪声来自当前信噪比。");
     drawBench();
@@ -840,6 +938,7 @@
       material: sample.material === "custom" ? "custom" : sample.material,
       diameterMm: sample.id === "custom" ? Number(state.custom.d) : sample.diameterMm,
       massKg: Number(state.mass),
+      tempC: state.T,
       points: state.points.map((p) => [p.tMs, p.Lmm])
     };
     state.runs = state.runs.filter((r) => {
@@ -1560,6 +1659,7 @@
       const period = 1e6 / freqHz();
       state.cursor1 = period * 0.25;
       state.cursor2 = state.cursor1 + flightMsAt(state.L) * 1000 + gauss() * jitterMs(state.L) * 1000;
+      markCursors();
       drawBench();
     });
     $("btn-record").addEventListener("click", recordPoint);
@@ -1611,6 +1711,7 @@
       const dir = e.key === "ArrowRight" ? 1 : -1;
       const which = e.shiftKey ? "cursor1" : "cursor2";
       state[which] = clamp(state[which] + dir * step, 0, state.plot.windowUs);
+      markCursors();
       drawScope();
       const dt = (state.cursor2 - state.cursor1) / 1000;
       $("dt-readout").textContent = isFinite(dt) ? dt.toFixed(4) : "—";
@@ -1623,6 +1724,7 @@
       t = clamp(t, 0, state.plot.windowUs);
       if (state.drag === "c1") state.cursor1 = t;
       else state.cursor2 = t;
+      markCursors();
       drawScope();
       const dt = (state.cursor2 - state.cursor1) / 1000;
       $("dt-readout").textContent = dt.toFixed(4);

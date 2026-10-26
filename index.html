@@ -112,7 +112,7 @@
       <div class="grid-3">
         <article class="card"><h3>预实验</h3><p>先测空气，再测零载荷颗粒。空气声速接近温度公式的预期，颗粒声速低于空气，钢珠快于同粒径玻璃珠，装置才进入正式加压测量。</p></article>
         <article class="card"><h3>正式测量</h3><p>每个载荷记录多组距离和时间。声速取 L–t 直线斜率，并给出相关系数 r 和斜率标准差 s<sub>m</sub>。</p></article>
-        <article class="card"><h3>高压拓展</h3><p>附录程序按 P → F → δ → k<sub>n</sub> → E<sub>eff</sub> → v 计算。在理想条件下 ln v–ln P 的斜率精确等于 1/6。</p></article>
+        <article class="card"><h3>高压拓展</h3><p>按 P → F → δ → k<sub>n</sub> → E<sub>eff</sub> → v 计算。在理想条件下 ln v–ln P 的斜率精确等于 1/6。</p></article>
       </div>
     </section>
 
@@ -286,6 +286,7 @@
           <p class="small">单点估算 L/Δt = <strong id="single-v">—</strong> m/s。最终声速用下面的斜率。</p>
           <div id="warn-backlash" class="warn" hidden>检测到反向调节，刻度比真实间距大约多 0.40 mm。请沿原前进方向多转一些以消隙。</div>
           <div id="warn-snr" class="warn" hidden></div>
+          <div id="warn-cursor" class="warn" hidden>间距、载荷或样品已经变了，光标还停在原来的位置。请重新寻峰或移动 C2，再记入。</div>
           <div class="actions">
             <button class="btn primary" id="btn-peak" type="button">寻峰并读数</button>
             <button class="btn" id="btn-record" type="button">记入当前点</button>
@@ -316,7 +317,7 @@
     <section id="view-data" class="view" hidden>
       <article class="card">
         <h2>数据处理</h2>
-        <p>「本次虚拟测量」是你在实验台记下的结果，「原实验数据」来自研究报告和答辩附件里的原始 (t, L)。两边都可以改数字：改时间或距离会重算声速、r 和 s<sub>m</sub>；改 g 或管内径会重算名义压强和 ln v–ln P 的幂指数，但不会改变已经测得的声速。</p>
+        <p>「本次虚拟测量」是你在实验台记下的结果，「原实验数据」是各样品已经测得的 (t, L)。两边都可以改数字：改时间或距离会重算声速、r 和 s<sub>m</sub>；改 g 或管内径会重算名义压强和 ln v–ln P 的幂指数，但不会改变已经测得的声速。</p>
         <div class="pills">
           <button type="button" id="tab-mine">本次虚拟测量</button>
           <button type="button" id="tab-book" class="active">原实验数据</button>
@@ -359,7 +360,7 @@
             <button class="btn" id="btn-add-point" type="button">增加一行</button>
             <button class="btn danger" id="btn-del-run" type="button" hidden>删除此载荷</button>
           </div>
-          <p class="small muted">报告正文里 1 mm 与 2 mm 玻璃珠的幂指数栏曾经对调；2 mm 钢珠零载荷的 r 也与附件不一致。本页一律按表中的 t、L 重算。</p>
+          <p class="small muted">声速、r 和 s<sub>m</sub> 都按表中的 t、L 重算。</p>
         </article>
       </div>
       <div class="split-charts">
@@ -379,7 +380,7 @@
     <section id="view-hertz" class="view" hidden>
       <article class="card">
         <h2>高压区赫兹仿真</h2>
-        <p>真实螺杆和传感器到不了使等效介质理论严格成立的压力。这里按附录程序，从宏观压强一路算到纵波声速。理想曲线的双对数斜率就是 1/6。默认参数对应报告表中的玻璃珠：半径 0.36 mm，Z = 5.2，φ = 0.61，E = 65 GPa，ν = 0.22，ρ = 2230 kg/m³。0.4 MPa 处的声速由公式直接算出，不再另设锚点。</p>
+        <p>真实螺杆和传感器到不了使等效介质理论严格成立的压力。这里从宏观压强一路算到纵波声速：P → F → δ → k<sub>n</sub> → E<sub>eff</sub> → v。理想曲线的双对数斜率就是 1/6。默认参数对应玻璃珠：半径 0.36 mm，Z = 5.2，φ = 0.61，E = 65 GPa，ν = 0.22，ρ = 2230 kg/m³。0.4 MPa 处的声速由公式直接算出。</p>
         <div id="h-warning" class="warn" hidden></div>
       </article>
       <div class="grid-2">
@@ -465,7 +466,7 @@
         </article>
       </div>
       <article class="card">
-        <h3>器材成本（修订版报告）</h3>
+        <h3>器材成本</h3>
         <table>
           <thead><tr><th>器材</th><th>单价</th><th>数量</th><th>小计 / 元</th></tr></thead>
           <tbody>
@@ -490,14 +491,16 @@
           <li>张攀等. 物理学报 65, 024502 (2016).</li>
           <li>周志刚. 颗粒固体的力学响应和声波传播的研究. 中国科学院大学博士学位论文, 2017.</li>
           <li>李向亭, 朱连根, 黄学东. 物理实验 32(11), 36 (2012).</li>
+          <li>张增明. 大学物理实验. 第一册. 高等教育出版社, 2024: 46–48.</li>
+          <li>赵西梅, 李向亭, 周红等. 物理实验, 2014(12): 33–35.</li>
         </ol>
       </article>
     </section>
   </main>
   <footer>速强团队 · 水平加载颗粒声速实验的虚拟仿真。计算与原始数据表在浏览器内完成，不需要安装环境。</footer>
   <div id="toast" class="toast" hidden></div>
-  <script src="js/data.js?v=5" defer></script>
-  <script src="js/physics.js?v=5" defer></script>
-  <script src="js/app.js?v=5" defer></script>
+  <script src="js/data.js?v=6" defer></script>
+  <script src="js/physics.js?v=6" defer></script>
+  <script src="js/app.js?v=9" defer></script>
 </body>
 </html>
