@@ -123,7 +123,7 @@ h3 { font-size: 22px; margin: 0 0 8px; }
 .formula-card { padding: 22px; display: flex; flex-direction: column; justify-content: space-between; }
 .eq {
   font-family: "Cambria Math", Cambria, "Times New Roman", "SimSun", serif;
-  font-style: italic;
+  font-style: normal;
   font-size: 1.35rem;
   line-height: 1.15;
   background: #101820;
@@ -159,8 +159,27 @@ h3 { font-size: 22px; margin: 0 0 8px; }
   gap: 0.22em;
   padding: 0.06em 0.5em;
   white-space: nowrap;
+  width: auto;
+  max-width: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
-.frac > .num { border-bottom: 1.6px solid currentColor; padding-bottom: 0.16em; }
+.frac > .num {
+  position: relative;
+  padding-bottom: 0.2em;
+}
+.frac > .num::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.6px;
+  background: currentColor;
+  border-radius: 0;
+}
 .frac > .den { padding-top: 0.14em; }
 .pow {
   display: inline-flex;
@@ -203,7 +222,7 @@ h3 { font-size: 22px; margin: 0 0 8px; }
   top: 0.02em;
   border-top: 1.4px solid currentColor;
 }
-.eq sub, .eq sup { font-size: 0.62em; font-style: italic; line-height: 0; }
+.eq sub, .eq sup { font-size: 0.62em; font-style: normal; line-height: 0; }
 .eq sup { position: relative; top: -0.55em; }
 .eq sub { position: relative; top: 0.25em; }
 .calc {
@@ -228,7 +247,7 @@ th, td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); text
 th { color: var(--amber); font-weight: 600; font-size: 12px; letter-spacing: 0.04em; }
 tr.clickable { cursor: pointer; }
 tr.selected { background: rgba(228, 177, 90, 0.1); }
-.num, input[type="number"], input[type="text"], select {
+input.num, input[type="number"], input[type="text"], select {
   background: #101820;
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
